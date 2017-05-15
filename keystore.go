@@ -19,6 +19,9 @@ func Init() *KeyStore {
 // Save a proto to the keystore
 func (k *KeyStore) Save(key string, m proto.Message) error {
 	k.mem[key] = m
-
 	return nil
+}
+
+func (k *KeyStore) Read(key string) (proto.Message, error) {
+	return k.mem[key], nil
 }
