@@ -1,45 +1,63 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+
+	pbd "github.com/brotherlogic/keystore/proto"
+	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 // KeyStore the main server
 type KeyStore struct {
-	mem  map[string]proto.Message
+	mem  map[string][]byte
 	path string
 }
 
 //Init a keystore
 func Init(p string) *KeyStore {
 	ks := &KeyStore{}
-	ks.mem = make(map[string]proto.Message)
+	ks.mem = make(map[string][]byte)
 	ks.path = p
 	return ks
 }
 
-// Save a proto to the keystore
-func (k *KeyStore) Save(key string, m proto.Message) error {
-	k.mem[key] = m
+// Save a save request proto
+func (k *KeyStore) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error) {
+	k.localSaveBytes(req.Key, req.Value.Value)
+	return &pbd.Empty{}, nil
+}
+
+func (k *KeyStore) Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error) {
+	data, _ := k.localReadBytes(req.Key)
+	return &google_protobuf.Any{Value: data}, nil
+}
+
+func (k *KeyStore) localSaveBytes(key string, bytes []byte) error {
+	k.mem[key] = bytes
 
 	fullpath := k.path + key
-	data, _ := proto.Marshal(m)
 	log.Printf("WRITING %v", fullpath)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
 	}
-	ioutil.WriteFile(fullpath, data, 0644)
+	ioutil.WriteFile(fullpath, bytes, 0644)
 
 	return nil
 }
 
-func (k *KeyStore) Read(key string, faker proto.Message) (proto.Message, error) {
+func (k *KeyStore) localSave(key string, m proto.Message) error {
+	data, _ := proto.Marshal(m)
+	return k.localSaveBytes(key, data)
+}
+
+func (k *KeyStore) localReadBytes(key string) ([]byte, error) {
 	if _, ok := k.mem[key]; ok {
 		return k.mem[key], nil
 	}
@@ -47,6 +65,12 @@ func (k *KeyStore) Read(key string, faker proto.Message) (proto.Message, error) 
 	// Try to read from the fs
 	log.Printf("Reading from file %v", k.path+key)
 	data, _ := ioutil.ReadFile(k.path + key)
-	proto.Unmarshal(data, faker)
+	k.mem[key] = data
+
+	return data, nil
+}
+func (k *KeyStore) localRead(key string, faker proto.Message) (proto.Message, error) {
+	d, _ := k.localReadBytes(key)
+	proto.Unmarshal(d, faker)
 	return faker, nil
 }
