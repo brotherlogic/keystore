@@ -1,13 +1,14 @@
 package main
 
 import (
-	"context"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
+	"github.com/brotherlogic/goserver"
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	pbd "github.com/brotherlogic/keystore/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
@@ -15,16 +16,9 @@ import (
 
 // KeyStore the main server
 type KeyStore struct {
+	*goserver.GoServer
 	mem  map[string][]byte
 	path string
-}
-
-//Init a keystore
-func Init(p string) *KeyStore {
-	ks := &KeyStore{}
-	ks.mem = make(map[string][]byte)
-	ks.path = p
-	return ks
 }
 
 // Save a save request proto
