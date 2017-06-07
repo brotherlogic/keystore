@@ -1,4 +1,4 @@
-package main
+package store
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/brotherlogic/goserver"
 	pbd "github.com/brotherlogic/keystore/proto"
 	pb "github.com/brotherlogic/keystore/testproto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
@@ -80,5 +81,6 @@ func InitTest(path string, delete bool) *KeyStore {
 	if delete {
 		os.RemoveAll(path)
 	}
-	return Init(path)
+	ks := &KeyStore{&goserver.GoServer{}, make(map[string][]byte), path}
+	return ks
 }

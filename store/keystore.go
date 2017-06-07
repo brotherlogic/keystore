@@ -1,4 +1,4 @@
-package main
+package store
 
 import (
 	"io/ioutil"
@@ -17,8 +17,8 @@ import (
 // KeyStore the main server
 type KeyStore struct {
 	*goserver.GoServer
-	mem  map[string][]byte
-	path string
+	Mem  map[string][]byte
+	Path string
 }
 
 // Save a save request proto
@@ -33,9 +33,9 @@ func (k *KeyStore) Read(ctx context.Context, req *pbd.ReadRequest) (*google_prot
 }
 
 func (k *KeyStore) localSaveBytes(key string, bytes []byte) error {
-	k.mem[key] = bytes
+	k.Mem[key] = bytes
 
-	fullpath := k.path + key
+	fullpath := k.Path + key
 	log.Printf("WRITING %v", fullpath)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -52,14 +52,14 @@ func (k *KeyStore) localSave(key string, m proto.Message) error {
 }
 
 func (k *KeyStore) localReadBytes(key string) ([]byte, error) {
-	if _, ok := k.mem[key]; ok {
-		return k.mem[key], nil
+	if _, ok := k.Mem[key]; ok {
+		return k.Mem[key], nil
 	}
 
 	// Try to read from the fs
-	log.Printf("Reading from file %v", k.path+key)
-	data, _ := ioutil.ReadFile(k.path + key)
-	k.mem[key] = data
+	log.Printf("Reading from file %v", k.Path+key)
+	data, _ := ioutil.ReadFile(k.Path + key)
+	k.Mem[key] = data
 
 	return data, nil
 }

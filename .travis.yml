@@ -16,6 +16,9 @@ before_install:
   fi
   
 script:
-- fgt golint $(find . | grep .go$ | grep -v server.pb.go | grep -v test.pb.go)
+- fgt golint $(find store | grep .go$ | grep -v server.pb.go | grep -v test.pb.go)
+- fgt golint $(find client | grep .go$ | grep -v server.pb.go | grep -v test.pb.go)
+- fgt golint keystoreapi.go
 - go test ./...
-- $HOME/gopath/bin/goveralls -service=travis-ci -ignore keystoreapi.go -package github.com/brotherlogic/keystore
+- $HOME/gopath/bin/goveralls -service=travis-ci -ignore keystoreapi.go -package github.com/brotherlogic/keystore/store
+- $HOME/gopath/bin/goveralls -service=travis-ci -ignore keystoreapi.go -package github.com/brotherlogic/keystore/client
