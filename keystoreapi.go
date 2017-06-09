@@ -5,26 +5,32 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/brotherlogic/goserver"
+	"github.com/brotherlogic/keystore/store"
 	"google.golang.org/grpc"
 
-	"github.com/brotherlogic/goserver"
 	pb "github.com/brotherlogic/keystore/proto"
 )
 
+//SStore Server type for keystore
+type SStore struct {
+	store.KeyStore
+}
+
 // DoRegister does RPC registration
-func (k KeyStore) DoRegister(server *grpc.Server) {
-	pb.RegisterKeyStoreServiceServer(server, &k)
+func (k SStore) DoRegister(server *grpc.Server) {
+	pb.RegisterKeyStoreServiceServer(server, &k.KeyStore)
 }
 
 //Init a keystore
-func Init(p string) *KeyStore {
-	ks := &KeyStore{&goserver.GoServer{}, make(map[string][]byte), p}
+func Init(p string) *SStore {
+	ks := &SStore{store.KeyStore{GoServer: &goserver.GoServer{}, Mem: make(map[string][]byte), Path: p}}
 	ks.Register = ks
 	return ks
 }
 
 // ReportHealth alerts if we're not healthy
-func (k KeyStore) ReportHealth() bool {
+func (k SStore) ReportHealth() bool {
 	return true
 }
 
