@@ -14,18 +14,19 @@ type link interface {
 	Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error)
 }
 
-type keystoreclient struct {
+//Keystoreclient the client
+type Keystoreclient struct {
 	discovery string
 	linker    link
 }
 
-func (c *keystoreclient) Save(key string, message proto.Message) error {
+func (c *Keystoreclient) Save(key string, message proto.Message) error {
 	bytes, _ := proto.Marshal(message)
 	_, err := c.linker.Save(context.Background(), &pbd.SaveRequest{Key: key, Value: &google_protobuf.Any{Value: bytes}})
 	return err
 }
 
-func (c *keystoreclient) Load(key string, typ proto.Message) (proto.Message, error) {
+func (c *Keystoreclient) Load(key string, typ proto.Message) (proto.Message, error) {
 	res, _ := c.linker.Read(context.Background(), &pbd.ReadRequest{Key: key})
 	proto.Unmarshal(res.Value, typ)
 	return typ, nil
