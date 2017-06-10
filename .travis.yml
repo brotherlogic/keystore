@@ -21,4 +21,4 @@ script:
 - fgt golint keystoreapi.go
 - go test ./...
 - $HOME/gopath/bin/goveralls -service=travis-ci -ignore keystoreapi.go -package github.com/brotherlogic/keystore/store
-- $HOME/gopath/bin/goveralls -service=travis-ci -ignore keystoreapi.go -package github.com/brotherlogic/keystore/client
+- $HOME/gopath/bin/goveralls -service=travis-ci -ignore client/keystoreclientapi.go -package github.com/brotherlogic/keystore/client
