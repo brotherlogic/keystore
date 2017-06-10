@@ -1,16 +1,10 @@
 package store
 
 import (
-	"context"
 	"os"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-
-	"github.com/brotherlogic/goserver"
-	pbd "github.com/brotherlogic/keystore/proto"
 	pb "github.com/brotherlogic/keystore/testproto"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 func TestBasicSave(t *testing.T) {
@@ -55,32 +49,11 @@ func TestAcrossServers(t *testing.T) {
 	}
 }
 
-func TestReadViaRPC(t *testing.T) {
-	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	bytes, _ := proto.Marshal(tp)
-	s := InitTest(".testreadviarpc", true)
-	s.Save(context.Background(), &pbd.SaveRequest{Key: "/test/path", Value: &google_protobuf.Any{Value: bytes}})
-	resp, err := s.Read(context.Background(), &pbd.ReadRequest{Key: "/test/path"})
-	if err != nil {
-		t.Fatalf("Failed on RPC read: %v", err)
-	}
-	tp2 := &pb.TestProto{}
-	err = proto.Unmarshal(resp.Value, tp2)
-
-	if err != nil {
-		t.Fatalf("Failed on proto unmarshal: %v", err)
-	}
-
-	if tp2.Key != "Key" || tp2.Value != "Value" {
-		t.Errorf("Failed on re-reading proto: %v", tp2)
-	}
-}
-
 //InitTest prepares a test instance
-func InitTest(path string, delete bool) *KeyStore {
+func InitTest(path string, delete bool) *Store {
 	if delete {
 		os.RemoveAll(path)
 	}
-	ks := &KeyStore{&goserver.GoServer{}, make(map[string][]byte), path}
+	ks := &Store{make(map[string][]byte), path}
 	return ks
 }
