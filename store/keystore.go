@@ -6,33 +6,17 @@ import (
 	"os"
 	"strings"
 
-	"github.com/brotherlogic/goserver"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/net/context"
-
-	pbd "github.com/brotherlogic/keystore/proto"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
-// KeyStore the main server
-type KeyStore struct {
-	*goserver.GoServer
+// Store is the basic store type
+type Store struct {
 	Mem  map[string][]byte
 	Path string
 }
 
-// Save a save request proto
-func (k *KeyStore) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error) {
-	k.localSaveBytes(req.Key, req.Value.Value)
-	return &pbd.Empty{}, nil
-}
-
-func (k *KeyStore) Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error) {
-	data, _ := k.localReadBytes(req.Key)
-	return &google_protobuf.Any{Value: data}, nil
-}
-
-func (k *KeyStore) localSaveBytes(key string, bytes []byte) error {
+//LocalSaveBytes saves out a bunch of bytes
+func (k *Store) LocalSaveBytes(key string, bytes []byte) error {
 	k.Mem[key] = bytes
 
 	fullpath := k.Path + key
@@ -46,12 +30,13 @@ func (k *KeyStore) localSaveBytes(key string, bytes []byte) error {
 	return nil
 }
 
-func (k *KeyStore) localSave(key string, m proto.Message) error {
+func (k *Store) localSave(key string, m proto.Message) error {
 	data, _ := proto.Marshal(m)
-	return k.localSaveBytes(key, data)
+	return k.LocalSaveBytes(key, data)
 }
 
-func (k *KeyStore) localReadBytes(key string) ([]byte, error) {
+//LocalReadBytes reads bytes
+func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 	if _, ok := k.Mem[key]; ok {
 		return k.Mem[key], nil
 	}
@@ -63,8 +48,8 @@ func (k *KeyStore) localReadBytes(key string) ([]byte, error) {
 
 	return data, nil
 }
-func (k *KeyStore) localRead(key string, faker proto.Message) (proto.Message, error) {
-	d, _ := k.localReadBytes(key)
+func (k *Store) localRead(key string, faker proto.Message) (proto.Message, error) {
+	d, _ := k.LocalReadBytes(key)
 	proto.Unmarshal(d, faker)
 	return faker, nil
 }

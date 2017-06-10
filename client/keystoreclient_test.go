@@ -11,20 +11,22 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
-func getTestClient(path string) *keystoreclient {
-	return &keystoreclient{linker: &localLinker{s: store.KeyStore{Mem: make(map[string][]byte), Path: path}}}
+func getTestClient(path string) *Keystoreclient {
+	return &Keystoreclient{linker: &localLinker{s: store.Store{Mem: make(map[string][]byte), Path: path}}}
 }
 
 type localLinker struct {
-	s store.KeyStore
+	s store.Store
 }
 
 func (l *localLinker) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error) {
-	return l.s.Save(ctx, req)
+	err := l.s.LocalSaveBytes(req.Key, req.Value.Value)
+	return &pbd.Empty{}, err
 }
 
 func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error) {
-	return l.s.Read(ctx, req)
+	bytes, err := l.s.LocalReadBytes(req.Key)
+	return &google_protobuf.Any{Value: bytes}, err
 }
 
 func TestSaveAndLoad(t *testing.T) {
