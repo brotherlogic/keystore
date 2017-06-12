@@ -43,3 +43,8 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 	store := pb.NewKeyStoreServiceClient(conn)
 	return store.Read(ctx, req)
 }
+
+//GetClient gets a networked client
+func GetClient() *Keystoreclient {
+	return &Keystoreclient{linker: &Prodlinker{}}
+}
