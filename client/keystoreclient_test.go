@@ -11,7 +11,8 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
-func getTestClient(path string) *Keystoreclient {
+//GetTestClient gets a test client that saves to a local store
+func GetTestClient(path string) *Keystoreclient {
 	return &Keystoreclient{linker: &localLinker{s: store.Store{Mem: make(map[string][]byte), Path: path}}}
 }
 
@@ -31,7 +32,7 @@ func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*google_p
 
 func TestSaveAndLoad(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	client := getTestClient(".testsaveandload")
+	client := GetTestClient(".testsaveandload")
 	err := client.Save("/testkey", tp)
 
 	if err != nil {
