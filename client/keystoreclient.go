@@ -13,7 +13,7 @@ import (
 
 //GetTestClient gets a test client that saves to a local store
 func GetTestClient(path string) *Keystoreclient {
-	return &Keystoreclient{linker: &localLinker{s: store.Store{Mem: make(map[string][]byte), Path: path}}}
+	return &Keystoreclient{linker: &localLinker{s: store.InitStore(path)}}
 }
 
 type localLinker struct {
@@ -22,7 +22,7 @@ type localLinker struct {
 
 //Save saves out a proto
 func (l *localLinker) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error) {
-	err := l.s.LocalSaveBytes(req.Key, req.Value.Value)
+	_, err := l.s.LocalSaveBytes(req.Key, req.Value.Value)
 	return &pbd.Empty{}, err
 }
 

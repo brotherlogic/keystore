@@ -44,6 +44,11 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*google_proto
 	return &google_protobuf.Any{Value: data}, nil
 }
 
+//GetMeta gets the metadata
+func (k *KeyStore) GetMeta(ctx context.Context, req *pb.Empty) (*pb.StoreMeta, error) {
+	return k.Meta, nil
+}
+
 // ReportHealth alerts if we're not healthy
 func (k KeyStore) ReportHealth() bool {
 	return true
