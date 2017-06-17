@@ -129,6 +129,7 @@ func TestAcrossServers(t *testing.T) {
 
 //InitTest prepares a test instance
 func InitTest(path string, delete bool) *Store {
+	log.Printf("INITING %v", path)
 	if delete {
 		os.RemoveAll(path)
 	}
