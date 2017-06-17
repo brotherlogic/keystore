@@ -19,6 +19,7 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 	pb.RegisterKeyStoreServiceServer(server, &k)
 }
 
+//Mote promotes or demotes this server
 func (k KeyStore) Mote(master bool) error {
 	// Do nothing
 	return nil
