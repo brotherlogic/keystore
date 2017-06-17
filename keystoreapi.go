@@ -19,6 +19,11 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 	pb.RegisterKeyStoreServiceServer(server, &k)
 }
 
+func (k KeyStore) Mote(master bool) error {
+	// Do nothing
+	return nil
+}
+
 //Init a keystore
 func Init(p string) *KeyStore {
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &store.Store{Mem: make(map[string][]byte), Path: p}}
