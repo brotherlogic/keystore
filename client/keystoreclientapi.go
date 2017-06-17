@@ -2,6 +2,7 @@ package keystoreclient
 
 import (
 	"context"
+	"errors"
 	"strconv"
 
 	"google.golang.org/grpc"
@@ -27,11 +28,18 @@ func getIP(servername string) (string, int) {
 //Save saves out the thingy
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	ip, port := getIP("keystore")
-	conn, _ := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
-	defer conn.Close()
+	if port > 0 {
+		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
 
-	store := pb.NewKeyStoreServiceClient(conn)
-	return store.Save(ctx, req)
+		if err == nil {
+			defer conn.Close()
+
+			store := pb.NewKeyStoreServiceClient(conn)
+			return store.Save(ctx, req)
+		}
+	}
+
+	return &pb.Empty{}, errors.New("Unable to save " + ip)
 }
 
 //Read reads out the thingy
