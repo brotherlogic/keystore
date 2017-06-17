@@ -3,6 +3,7 @@ package keystoreclient
 import (
 	"context"
 	"errors"
+	"log"
 	"strconv"
 
 	"google.golang.org/grpc"
@@ -16,12 +17,20 @@ import (
 type Prodlinker struct{}
 
 func getIP(servername string) (string, int) {
-	conn, _ := grpc.Dial("192.168.86.64:50055", grpc.WithInsecure())
+	conn, err := grpc.Dial("192.168.86.64:50055", grpc.WithInsecure())
+	if err != nil {
+		log.Printf("Failed to dial discovery: %v", err)
+		return "", -1
+	}
 	defer conn.Close()
 
 	registry := pbdi.NewDiscoveryServiceClient(conn)
 	entry := pbdi.RegistryEntry{Name: servername}
-	r, _ := registry.Discover(context.Background(), &entry)
+	r, err := registry.Discover(context.Background(), &entry)
+	if err != nil {
+		log.Printf("Failed to discover %v -> %v", servername, err)
+		return "", -1
+	}
 	return r.Ip, int(r.Port)
 }
 

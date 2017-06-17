@@ -27,7 +27,8 @@ func (k KeyStore) Mote(master bool) error {
 
 //Init a keystore
 func Init(p string) *KeyStore {
-	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &store.Store{Mem: make(map[string][]byte), Path: p}}
+	s := store.InitStore(p)
+	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &s}
 	ks.Register = ks
 	return ks
 }
