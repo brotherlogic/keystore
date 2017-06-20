@@ -53,11 +53,18 @@ func match(a, b []byte) bool {
 
 //Save performs a local save
 func (k *Store) Save(req *pb.SaveRequest) error {
-	write, err := k.LocalSaveBytes(req.Key, req.Value.Value)
+	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
 	if write {
 		k.Updates = append(k.Updates, req)
 	}
 	return err
+}
+
+func adjustKey(key string) string {
+	if !strings.HasPrefix(key, "/") && len(key) > 0 {
+		return key[1:]
+	}
+	return key
 }
 
 //LocalSaveBytes saves out a bunch of bytes
@@ -68,9 +75,9 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 		return false, nil
 	}
 
-	k.Mem[key] = bytes
+	k.Mem[adjustKey(key)] = bytes
 
-	fullpath := k.Path + key
+	fullpath := k.Path + adjustKey(key)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
@@ -94,11 +101,11 @@ func (k *Store) localSave(key string, m proto.Message) error {
 
 //LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
-	if _, ok := k.Mem[key]; ok {
-		return k.Mem[key], nil
+	if _, ok := k.Mem[adjustKey(key)]; ok {
+		return k.Mem[adjustKey(key)], nil
 	}
 
-	data, _ := ioutil.ReadFile(k.Path + key)
+	data, _ := ioutil.ReadFile(k.Path + adjustKey(key))
 	k.Mem[key] = data
 
 	return data, nil
