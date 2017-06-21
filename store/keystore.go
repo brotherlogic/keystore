@@ -78,6 +78,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 	k.Mem[adjustKey(key)] = bytes
 
 	fullpath := k.Path + adjustKey(key)
+	log.Printf("SAVING TO %v", fullpath)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
@@ -105,6 +106,7 @@ func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 		return k.Mem[adjustKey(key)], nil
 	}
 
+	log.Printf("LOADING FROM %v", k.Path+adjustKey(key))
 	data, _ := ioutil.ReadFile(k.Path + adjustKey(key))
 	k.Mem[key] = data
 
