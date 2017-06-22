@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"time"
 
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/keystore/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
+
+const ()
 
 //Prodlinker Production ready linker
 type Prodlinker struct {
@@ -45,5 +48,5 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 
 //GetClient gets a networked client
 func GetClient() *Keystoreclient {
-	return &Keystoreclient{linker: &Prodlinker{}}
+	return &Keystoreclient{linker: &Prodlinker{}, retries: 5, backoffTime: time.Minute * 5}
 }

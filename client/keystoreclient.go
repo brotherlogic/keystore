@@ -2,7 +2,9 @@ package keystoreclient
 
 import (
 	"context"
+	"errors"
 	"log"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -13,7 +15,7 @@ import (
 
 //GetTestClient gets a test client that saves to a local store
 func GetTestClient(path string) *Keystoreclient {
-	return &Keystoreclient{linker: &localLinker{s: store.InitStore(path)}}
+	return &Keystoreclient{linker: &localLinker{s: store.InitStore(path)}, retries: 5, backoffTime: time.Millisecond * 5}
 }
 
 type localLinker struct {
@@ -39,8 +41,10 @@ type link interface {
 
 // Keystoreclient is the main client
 type Keystoreclient struct {
-	discovery string
-	linker    link
+	discovery   string
+	linker      link
+	retries     int
+	backoffTime time.Duration
 }
 
 // Save saves a proto
@@ -52,8 +56,41 @@ func (c *Keystoreclient) Save(key string, message proto.Message) error {
 }
 
 // Load loads a proto
-func (c *Keystoreclient) Load(key string, typ proto.Message) (proto.Message, error) {
-	res, _ := c.linker.Read(context.Background(), &pbd.ReadRequest{Key: key})
+func (c *Keystoreclient) Read(key string, typ proto.Message) (proto.Message, error) {
+	res, err := c.linker.Read(context.Background(), &pbd.ReadRequest{Key: key})
+	if err != nil {
+		return nil, err
+	}
 	proto.Unmarshal(res.Value, typ)
 	return typ, nil
+}
+
+// HardRead performs a read with retries
+func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message, error) {
+	for i := 0; i < c.retries; i++ {
+		v, err := c.Read(key, typ)
+		if err == nil {
+			return v, err
+		}
+
+		time.Sleep(c.backoffTime / time.Duration(c.retries))
+	}
+
+	return nil, errors.New("Unable to perform hard read")
+}
+
+// HardSave performs a save with retries
+func (c *Keystoreclient) HardSave(key string, message proto.Message) error {
+	for i := 0; i < c.retries; i++ {
+		log.Printf("TRY #%v", i)
+		err := c.Save(key, message)
+		log.Printf("SAVE ATTEMPT: %v", err)
+		if err == nil {
+			return err
+		}
+
+		time.Sleep(c.backoffTime / time.Duration(c.retries))
+	}
+
+	return errors.New("Unable to perform hard save")
 }
