@@ -14,14 +14,16 @@ import (
 
 const ()
 
+type getIP func(servername string) (string, int)
+
 //Prodlinker Production ready linker
 type Prodlinker struct {
-	getIP func(servername string) (string, int)
+	getter getIP
 }
 
 //Save saves out the thingy
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	ip, port := p.getIP("keystore")
+	ip, port := p.getter("keystore")
 	if port > 0 {
 		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
 
@@ -38,7 +40,7 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 
 //Read reads out the thingy
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
-	ip, port := p.getIP("keystore")
+	ip, port := p.getter("keystore")
 	conn, _ := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
 	defer conn.Close()
 
@@ -47,6 +49,6 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 }
 
 //GetClient gets a networked client
-func GetClient() *Keystoreclient {
-	return &Keystoreclient{linker: &Prodlinker{}, retries: 5, backoffTime: time.Minute * 5}
+func GetClient(f getIP) *Keystoreclient {
+	return &Keystoreclient{linker: &Prodlinker{getter: f}, retries: 5, backoffTime: time.Minute * 5}
 }
