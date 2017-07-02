@@ -107,10 +107,13 @@ func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 	}
 
 	log.Printf("LOADING FROM %v", k.Path+adjustKey(key))
-	data, _ := ioutil.ReadFile(k.Path + adjustKey(key))
-	k.Mem[key] = data
+	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 
-	return data, nil
+	if err != nil {
+		k.Mem[key] = data
+	}
+
+	return data, err
 }
 func (k *Store) localRead(key string, faker proto.Message) (proto.Message, error) {
 	d, _ := k.LocalReadBytes(key)

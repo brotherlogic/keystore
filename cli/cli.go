@@ -33,8 +33,8 @@ func findServer(name string) (string, int) {
 
 func main() {
 	client := keystoreclient.GetClient(findServer)
-	err := client.Save("/testkey", &pb.Empty{})
-	log.Printf("%v", err)
+	err := client.Save("/testingkeytryagain", &pb.Card{Text: "Testing222"})
+	log.Printf("Error: %v", err)
 
 	host, port := findServer("keystore")
 	if port > 0 {
