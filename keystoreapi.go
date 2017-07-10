@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"time"
 
 	"github.com/brotherlogic/goserver"
 	"github.com/brotherlogic/keystore/store"
@@ -41,13 +42,17 @@ type KeyStore struct {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	t := time.Now()
 	k.LocalSaveBytes(req.Key, req.Value.Value)
+	k.LogFunction("Save", int32(time.Now().Sub(t).Nanoseconds()/1000000))
 	return &pb.Empty{}, nil
 }
 
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
+	t := time.Now()
 	data, _ := k.LocalReadBytes(req.Key)
+	k.LogFunction("Read", int32(time.Now().Sub(t).Nanoseconds()/1000000))
 	return &google_protobuf.Any{Value: data}, nil
 }
 
