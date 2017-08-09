@@ -22,7 +22,8 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 
 //Mote promotes or demotes this server
 func (k KeyStore) Mote(master bool) error {
-	// Do nothing
+	t := time.Now()
+	k.LogFunction("Mote", int32(time.Now().Sub(t).Nanoseconds()/1000000))
 	return nil
 }
 
