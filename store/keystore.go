@@ -54,7 +54,9 @@ func match(a, b []byte) bool {
 //Save performs a local save
 func (k *Store) Save(req *pb.SaveRequest) error {
 	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
+	log.Printf("SAVING %v -> %v", write, err)
 	if write {
+		req.WriteVersion = k.Meta.Version
 		k.Updates = append(k.Updates, req)
 	}
 	return err

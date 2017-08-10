@@ -5,7 +5,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
+	pbk "github.com/brotherlogic/keystore/proto"
 	pb "github.com/brotherlogic/keystore/testproto"
+	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 func TestBasicSave(t *testing.T) {
@@ -124,6 +128,22 @@ func TestAcrossServers(t *testing.T) {
 	tp2 := m.(*pb.TestProto)
 	if tp2.Key != "Key" || tp2.Value != "Value" {
 		t.Errorf("Read after save is failing: %v", m)
+	}
+}
+
+func TestUpdatesWrittenVersion(t *testing.T) {
+	tp := &pb.TestProto{Key: "Key", Value: "Value"}
+	s := InitTest(".testupdateswrittenversion", true)
+	bytes, _ := proto.Marshal(tp)
+	s.Save(&pbk.SaveRequest{Key: "/test/path1", Value: &google_protobuf.Any{Value: bytes}})
+	s.Save(&pbk.SaveRequest{Key: "/test/path2", Value: &google_protobuf.Any{Value: bytes}})
+
+	if len(s.Updates) != 2 {
+		t.Fatalf("Updates have not been saved: %v", s.Updates)
+	}
+
+	if s.Updates[len(s.Updates)-1].WriteVersion != s.Meta.Version {
+		t.Errorf("Mismatch in updates: (%v and %v) -> %v", s.Updates[len(s.Updates)-1].WriteVersion, s.Meta.Version, s)
 	}
 }
 
