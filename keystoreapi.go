@@ -43,7 +43,7 @@ type KeyStore struct {
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
 	k.LocalSaveBytes(req.Key, req.Value.Value)
-	k.LogFunction("Save", int32(time.Now().Sub(t).Nanoseconds()/1000000))
+	k.LogFunction("Save", t)
 	return &pb.Empty{}, nil
 }
 
@@ -51,7 +51,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
 	t := time.Now()
 	data, _ := k.LocalReadBytes(req.Key)
-	k.LogFunction("Read", int32(time.Now().Sub(t).Nanoseconds()/1000000))
+	k.LogFunction("Read", t)
 	return &google_protobuf.Any{Value: data}, nil
 }
 
