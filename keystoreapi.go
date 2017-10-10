@@ -67,13 +67,13 @@ func (k KeyStore) ReportHealth() bool {
 
 func main() {
 	var folder = flag.String("folder", "/media/disk1", "The folder to use as a base")
-	var verbose = flag.Bool("verbose", false, "Show all output")
+	var quiet = flag.Bool("quiet", false, "Show all output")
 	flag.Parse()
 
 	server := Init(*folder)
 
 	//Turn off logging
-	if !*verbose {
+	if *quiet {
 		log.SetFlags(0)
 		log.SetOutput(ioutil.Discard)
 	}

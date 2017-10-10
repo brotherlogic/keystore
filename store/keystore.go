@@ -2,7 +2,6 @@ package store
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
@@ -24,7 +23,6 @@ type Store struct {
 func InitStore(p string) Store {
 	meta := &pb.StoreMeta{}
 	data, err := ioutil.ReadFile(p + "/root.meta")
-	log.Printf("READ: %v", data)
 	if err == nil {
 		proto.Unmarshal(data, meta)
 	}
@@ -54,7 +52,6 @@ func match(a, b []byte) bool {
 //Save performs a local save
 func (k *Store) Save(req *pb.SaveRequest) error {
 	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
-	log.Printf("SAVING %v -> %v", write, err)
 	if write {
 		req.WriteVersion = k.Meta.Version
 		k.Updates = append(k.Updates, req)
@@ -80,7 +77,6 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 	k.Mem[adjustKey(key)] = bytes
 
 	fullpath := k.Path + adjustKey(key)
-	log.Printf("SAVING TO %v", fullpath)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
@@ -88,8 +84,6 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 	ioutil.WriteFile(fullpath, bytes, 0644)
 
 	//Increment the version
-	log.Printf("HERE %v", k)
-	log.Printf("ALSO %v", k.Meta)
 	k.Meta.Version++
 	k.saveMeta()
 
@@ -108,7 +102,6 @@ func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 		return k.Mem[adjustKey(key)], nil
 	}
 
-	log.Printf("LOADING FROM %v", k.Path+adjustKey(key))
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 
 	if err != nil {
