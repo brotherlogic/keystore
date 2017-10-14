@@ -3,6 +3,7 @@ package keystoreclient
 import (
 	"context"
 	"errors"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -12,7 +13,10 @@ import (
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
-const ()
+const (
+	retries       = 5
+	waitTimeBound = 10
+)
 
 type getIP func(servername string) (string, int)
 
@@ -23,29 +27,41 @@ type Prodlinker struct {
 
 //Save saves out the thingy
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	ip, port := p.getter("keystore")
-	if port > 0 {
-		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+	for i := 0; i < retries; i++ {
+		ip, port := p.getter("keystore")
+		if port > 0 {
+			conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
 
-		if err == nil {
-			defer conn.Close()
+			if err == nil {
+				defer conn.Close()
 
-			store := pb.NewKeyStoreServiceClient(conn)
-			return store.Save(ctx, req)
+				store := pb.NewKeyStoreServiceClient(conn)
+				return store.Save(ctx, req)
+			}
 		}
+
+		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
 	}
 
-	return &pb.Empty{}, errors.New("Unable to save " + ip)
+	return &pb.Empty{}, errors.New("Unable to save " + req.GetKey())
 }
 
 //Read reads out the thingy
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
-	ip, port := p.getter("keystore")
-	conn, _ := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
-	defer conn.Close()
+	for i := 0; i < retries; i++ {
+		ip, port := p.getter("keystore")
+		if port > 0 {
+			conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+			if err == nil {
+				defer conn.Close()
 
-	store := pb.NewKeyStoreServiceClient(conn)
-	return store.Read(ctx, req)
+				store := pb.NewKeyStoreServiceClient(conn)
+				return store.Read(ctx, req)
+				time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
+			}
+		}
+	}
+	return nil, errors.New("Unable to read " + req.GetKey())
 }
 
 //GetClient gets a networked client
