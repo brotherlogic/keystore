@@ -18,7 +18,7 @@ func findServer(name string) (string, int) {
 	defer conn.Close()
 
 	registry := pbdi.NewDiscoveryServiceClient(conn)
-	rs, _ := registry.ListAllServices(context.Background(), &pbdi.Empty{})
+	rs, _ := registry.ListAllServices(context.Background(), &pbdi.Empty{}, grpc.FailFast(false))
 
 	for _, r := range rs.Services {
 		if r.Name == name {
@@ -45,7 +45,7 @@ func main() {
 		defer conn.Close()
 
 		registry := pbk.NewKeyStoreServiceClient(conn)
-		res, err := registry.GetMeta(context.Background(), &pbk.Empty{})
+		res, err := registry.GetMeta(context.Background(), &pbk.Empty{}, grpc.FailFast(false))
 		if err != nil {
 			log.Fatalf("Error doing compare job: %v", err)
 		}

@@ -36,7 +36,7 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 				defer conn.Close()
 
 				store := pb.NewKeyStoreServiceClient(conn)
-				return store.Save(ctx, req)
+				return store.Save(ctx, req, grpc.FailFast(false))
 			}
 		}
 
@@ -56,10 +56,11 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 				defer conn.Close()
 
 				store := pb.NewKeyStoreServiceClient(conn)
-				return store.Read(ctx, req)
-				time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
+				return store.Read(ctx, req, grpc.FailFast(false))
+
 			}
 		}
+		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
 	}
 	return nil, errors.New("Unable to read " + req.GetKey())
 }
