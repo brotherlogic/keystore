@@ -51,10 +51,12 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 
 //Read reads out the thingy
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
+	err := errors.New("first pass fail")
 	for i := 0; i < retries; i++ {
 		ip, port := p.getter("keystore")
 		if port > 0 {
-			conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+			conn, err2 := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+			err = err2
 			if err == nil {
 				defer conn.Close()
 
@@ -65,7 +67,7 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 		}
 		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
 	}
-	return nil, errors.New("Unable to read " + req.GetKey())
+	return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
 }
 
 //GetClient gets a networked client
