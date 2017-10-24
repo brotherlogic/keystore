@@ -3,6 +3,7 @@ package keystoreclient
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
@@ -27,10 +28,12 @@ type Prodlinker struct {
 
 //Save saves out the thingy
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	err := errors.New("first pass fail")
 	for i := 0; i < retries; i++ {
 		ip, port := p.getter("keystore")
 		if port > 0 {
-			conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+			conn, err2 := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+			err = err2
 
 			if err == nil {
 				defer conn.Close()
@@ -43,7 +46,7 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
 	}
 
-	return &pb.Empty{}, errors.New("Unable to save " + req.GetKey())
+	return &pb.Empty{}, fmt.Errorf("Unable to save %v last error: %v", req.GetKey(), err)
 }
 
 //Read reads out the thingy
