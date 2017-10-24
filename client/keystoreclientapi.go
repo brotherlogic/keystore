@@ -62,8 +62,9 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*google_pro
 
 				store := pb.NewKeyStoreServiceClient(conn)
 				return store.Read(ctx, req, grpc.FailFast(false))
-
 			}
+		} else {
+			err = errors.New("Unable to discover")
 		}
 		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
 	}
