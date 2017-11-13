@@ -8,7 +8,6 @@ import (
 
 	pbd "github.com/brotherlogic/keystore/proto"
 	pb "github.com/brotherlogic/keystore/testproto"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 type countFail struct {
@@ -29,7 +28,7 @@ func (c *countFail) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty,
 }
 
 //Read reads a proto
-func (c *countFail) Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error) {
+func (c *countFail) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadResponse, error) {
 	if c.c < c.retries-1 {
 		c.c++
 		return nil, errors.New("Designed to fail")
@@ -47,7 +46,7 @@ func TestSaveAndLoad(t *testing.T) {
 		t.Fatalf("Error in saving message %v", err)
 	}
 
-	tp2t, err := client.Read("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.Read("/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -69,7 +68,7 @@ func TestSaveFail(t *testing.T) {
 		t.Fatalf("Error in saving message %v", err)
 	}
 
-	tp2t, err := client.Read("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.Read("/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -104,7 +103,7 @@ func TestReadFail(t *testing.T) {
 	}
 
 	client.linker = &countFail{l: linker}
-	tp2t, err := client.HardRead("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.HardRead("/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -123,7 +122,7 @@ func TestReadFailHard(t *testing.T) {
 	client.HardSave("/testkey", tp)
 
 	client.linker = &countFail{l: linker, c: 1, retries: 100}
-	_, err := client.HardRead("/testkey", &pb.TestProto{})
+	_, _, err := client.HardRead("/testkey", &pb.TestProto{})
 	if err == nil {
 		t.Fatalf("No error message on a hard read %v", err)
 	}

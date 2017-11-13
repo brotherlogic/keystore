@@ -11,6 +11,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	pbgs "github.com/brotherlogic/goserver/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
@@ -23,6 +24,10 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 //Mote promotes or demotes this server
 func (k KeyStore) Mote(master bool) error {
 	return nil
+}
+
+func (k KeyStore) GetState() []*pbgs.State {
+	return []*pbgs.State{}
 }
 
 //Init a keystore
@@ -48,11 +53,11 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 }
 
 // Read reads a proto
-func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*google_protobuf.Any, error) {
+func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	t := time.Now()
 	data, _ := k.LocalReadBytes(req.Key)
 	k.LogFunction("Read", t)
-	return &google_protobuf.Any{Value: data}, nil
+	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
 }
 
 //GetMeta gets the metadata

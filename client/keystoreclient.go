@@ -29,14 +29,15 @@ func (l *localLinker) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empt
 }
 
 //Read reads a proto
-func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error) {
+func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadResponse, error) {
+	t := time.Now()
 	bytes, err := l.s.LocalReadBytes(req.Key)
-	return &google_protobuf.Any{Value: bytes}, err
+	return &pbd.ReadResponse{Payload: &google_protobuf.Any{Value: bytes}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, err
 }
 
 type link interface {
 	Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error)
-	Read(ctx context.Context, req *pbd.ReadRequest) (*google_protobuf.Any, error)
+	Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadResponse, error)
 }
 
 // Keystoreclient is the main client
@@ -55,27 +56,27 @@ func (c *Keystoreclient) Save(key string, message proto.Message) error {
 }
 
 // Load loads a proto
-func (c *Keystoreclient) Read(key string, typ proto.Message) (proto.Message, error) {
+func (c *Keystoreclient) Read(key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
 	res, err := c.linker.Read(context.Background(), &pbd.ReadRequest{Key: key})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	proto.Unmarshal(res.Value, typ)
-	return typ, nil
+	proto.Unmarshal(res.GetPayload().GetValue(), typ)
+	return typ, res, nil
 }
 
 // HardRead performs a read with retries
-func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message, error) {
+func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
 	for i := 0; i < c.retries; i++ {
-		v, err := c.Read(key, typ)
+		v, val, err := c.Read(key, typ)
 		if err == nil {
-			return v, err
+			return v, val, err
 		}
 
 		time.Sleep(c.backoffTime / time.Duration(c.retries))
 	}
 
-	return nil, errors.New("Unable to perform hard read")
+	return nil, nil, errors.New("Unable to perform hard read")
 }
 
 // HardSave performs a save with retries
