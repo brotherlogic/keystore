@@ -1,3 +1,3 @@
 # Keystore
 
-Distributed File System
+Mulit-homed File System

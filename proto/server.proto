@@ -20,8 +20,13 @@ message StoreMeta {
 	int64 version = 1;
 }
 
+message ReadResponse {
+	google.protobuf.Any payload = 1;
+	int64 read_time = 2;
+}
+
 service KeyStoreService {
         rpc Save (SaveRequest) returns (Empty) {};
-				rpc Read (ReadRequest) returns (google.protobuf.Any) {};
+				rpc Read (ReadRequest) returns (ReadResponse) {};
 				rpc GetMeta (Empty) returns (StoreMeta) {};
 }
