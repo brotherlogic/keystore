@@ -4,6 +4,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/brotherlogic/goserver"
@@ -11,21 +12,83 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
+	pbd "github.com/brotherlogic/discovery/proto"
 	pbgs "github.com/brotherlogic/goserver/proto"
+	"github.com/brotherlogic/goserver/utils"
 	pb "github.com/brotherlogic/keystore/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
+
+type serverGetter interface {
+	getServers() []*pbd.RegistryEntry
+}
+
+type serverStatusGetter interface {
+	getStatus(*pbd.RegistryEntry) *pb.StoreMeta
+}
+
+// KeyStore the main server
+type KeyStore struct {
+	*goserver.GoServer
+	*store.Store
+	serverGetter       serverGetter
+	serverStatusGetter serverStatusGetter
+}
+
+type prodServerGetter struct{}
+
+func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
+	servers := make([]*pbd.RegistryEntry, 0)
+
+	conn, err := grpc.Dial(utils.Discover, grpc.WithInsecure())
+	if err == nil {
+		defer conn.Close()
+		client := pbd.NewDiscoveryServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		list, err := client.ListAllServices(ctx, &pbd.Empty{})
+		if err == nil {
+			for _, l := range list.Services {
+				if l.GetName() == "keystore" {
+					servers = append(servers, l)
+				}
+			}
+		}
+	}
+
+	return servers
+}
+
+type prodServerStatusGetter struct{}
+
+func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
+	var result *pb.StoreMeta
+
+	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
+	if err == nil {
+		defer conn.Close()
+		client := pb.NewKeyStoreServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		meta, err := client.GetMeta(ctx, &pb.Empty{})
+		if err == nil {
+			result = meta
+		}
+	}
+
+	return result
+}
 
 // DoRegister does RPC registration
 func (k KeyStore) DoRegister(server *grpc.Server) {
 	pb.RegisterKeyStoreServiceServer(server, &k)
 }
 
-//Mote promotes or demotes this server
-func (k KeyStore) Mote(master bool) error {
-	return nil
-}
-
+// GetState gets the state of the server
 func (k KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{}
 }
@@ -36,12 +99,6 @@ func Init(p string) *KeyStore {
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &s}
 	ks.Register = ks
 	return ks
-}
-
-// KeyStore the main server
-type KeyStore struct {
-	*goserver.GoServer
-	*store.Store
 }
 
 // Save a save request proto
