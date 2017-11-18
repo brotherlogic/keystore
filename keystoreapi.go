@@ -98,6 +98,8 @@ func Init(p string) *KeyStore {
 	s := store.InitStore(p)
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &s}
 	ks.Register = ks
+	ks.serverGetter = &prodServerGetter{}
+	ks.serverStatusGetter = &prodServerStatusGetter{}
 	return ks
 }
 
