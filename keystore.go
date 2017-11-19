@@ -1,6 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"golang.org/x/net/context"
+
+	pb "github.com/brotherlogic/keystore/proto"
+)
 
 //Mote promotes or demotes this server
 func (k *KeyStore) Mote(master bool) error {
@@ -14,4 +20,9 @@ func (k *KeyStore) Mote(master bool) error {
 	}
 
 	return nil
+}
+
+// GetDirectory gets a directory listing
+func (k *KeyStore) GetDirectory(ctx context.Context, req *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
+	return &pb.GetDirectoryResponse{Keys: k.Store.GetStored()}, nil
 }

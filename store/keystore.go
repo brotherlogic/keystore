@@ -2,7 +2,9 @@ package store
 
 import (
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
@@ -22,6 +24,10 @@ type Store struct {
 //InitStore builds out a store
 func InitStore(p string) Store {
 	meta := &pb.StoreMeta{}
+
+	// Make the directory if we need to
+	os.MkdirAll(p, 0777)
+
 	data, err := ioutil.ReadFile(p + "/root.meta")
 	if err == nil {
 		proto.Unmarshal(data, meta)
@@ -59,6 +65,20 @@ func (k *Store) Save(req *pb.SaveRequest) error {
 	return err
 }
 
+// GetStored gets all the local keys
+func (k *Store) GetStored() []string {
+	files := make([]string, 0)
+	filepath.Walk(k.Path, func(path string, info os.FileInfo, err error) error {
+		log.Printf("HERE: %v and %v -> %v", info.IsDir(), err, path)
+		if err == nil && !info.IsDir() && info.Name() != "root.meta" {
+			log.Printf("FILES: %v", files)
+			files = append(files, path[len(k.Path):])
+		}
+		return nil
+	})
+	return files
+}
+
 func adjustKey(key string) string {
 	if !strings.HasPrefix(key, "/") && len(key) > 0 {
 		return key[1:]
@@ -68,9 +88,11 @@ func adjustKey(key string) string {
 
 //LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
+	log.Printf("SAVING: %v", key)
 	//Don't write if the proto matches
 	data, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
+		log.Printf("HERE %v, %v", data, err)
 		return false, nil
 	}
 
@@ -78,6 +100,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 
 	fullpath := k.Path + adjustKey(key)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
+	log.Printf("SAVING TO %v", dir)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
 	}
@@ -102,6 +125,7 @@ func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 		return k.Mem[adjustKey(key)], nil
 	}
 
+	log.Printf("READING %v", k.Path+adjustKey(key))
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 
 	if err != nil {
