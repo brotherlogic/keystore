@@ -25,6 +25,7 @@ type serverGetter interface {
 
 type serverStatusGetter interface {
 	getStatus(*pbd.RegistryEntry) *pb.StoreMeta
+	write(*pbd.RegistryEntry, *pb.SaveRequest)
 }
 
 // KeyStore the main server
@@ -62,6 +63,18 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 }
 
 type prodServerStatusGetter struct{}
+
+func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) {
+	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
+	if err == nil {
+		defer conn.Close()
+		client := pb.NewKeyStoreServiceClient(conn)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		client.Save(ctx, req)
+	}
+}
 
 func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
 	var result *pb.StoreMeta
@@ -103,10 +116,21 @@ func Init(p string) *KeyStore {
 	return ks
 }
 
+func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
+	servers := k.serverGetter.getServers()
+	for _, server := range servers {
+		k.serverStatusGetter.write(server, req)
+	}
+}
+
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
 	k.LocalSaveBytes(req.Key, req.Value.Value)
+
+	// Fanout the writes async
+	go k.fanoutWrite(req)
+
 	k.LogFunction("Save", t)
 	return &pb.Empty{}, nil
 }

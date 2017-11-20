@@ -24,6 +24,10 @@ func (serverStatusGetter testServerStatusGetter) getStatus(entry *pbd.RegistryEn
 	return &pb.StoreMeta{Version: 75}
 }
 
+func (serverStatusGetter testServerStatusGetter) write(entry *pbd.RegistryEntry, sr *pb.SaveRequest) {
+	// Do nothing
+}
+
 func InitTest(p string) *KeyStore {
 	os.RemoveAll(p)
 	s := Init(p)
