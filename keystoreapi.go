@@ -36,7 +36,9 @@ type KeyStore struct {
 	serverStatusGetter serverStatusGetter
 }
 
-type prodServerGetter struct{}
+type prodServerGetter struct {
+	server string
+}
 
 func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 	servers := make([]*pbd.RegistryEntry, 0)
@@ -52,7 +54,7 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 		list, err := client.ListAllServices(ctx, &pbd.Empty{})
 		if err == nil {
 			for _, l := range list.Services {
-				if l.GetName() == "keystore" {
+				if l.GetName() == "keystore" && l.GetIdentifier() != serverGetter.server {
 					servers = append(servers, l)
 				}
 			}
@@ -168,5 +170,6 @@ func main() {
 
 	server.PrepServer()
 	server.RegisterServer("keystore", false)
+	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
 	server.Serve()
 }
