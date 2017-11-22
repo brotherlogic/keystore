@@ -55,6 +55,7 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 		if err == nil {
 			for _, l := range list.Services {
 				if l.GetName() == "keystore" && l.GetIdentifier() != serverGetter.server {
+					log.Printf("IGNORE %v and %v", l.GetIdentifier(), serverGetter.server)
 					servers = append(servers, l)
 				}
 			}
