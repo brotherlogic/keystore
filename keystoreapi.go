@@ -105,8 +105,8 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 }
 
 // GetState gets the state of the server
-func (k KeyStore) GetState() []*pbgs.State {
-	return []*pbgs.State{}
+func (k *KeyStore) GetState() []*pbgs.State {
+	return []*pbgs.State{&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()}}
 }
 
 //Init a keystore
