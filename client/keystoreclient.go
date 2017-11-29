@@ -57,7 +57,9 @@ func (c *Keystoreclient) Save(key string, message proto.Message) error {
 
 // Load loads a proto
 func (c *Keystoreclient) Read(key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
-	res, err := c.linker.Read(context.Background(), &pbd.ReadRequest{Key: key})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	res, err := c.linker.Read(ctx, &pbd.ReadRequest{Key: key})
 	if err != nil {
 		return nil, nil, err
 	}
