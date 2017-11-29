@@ -58,7 +58,7 @@ func match(a, b []byte) bool {
 //Save performs a local save
 func (k *Store) Save(req *pb.SaveRequest) error {
 	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
-	if write {
+	if write > 0 {
 		req.WriteVersion = k.Meta.Version
 		k.Updates = append(k.Updates, req)
 	}
@@ -87,13 +87,13 @@ func adjustKey(key string) string {
 }
 
 //LocalSaveBytes saves out a bunch of bytes
-func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
+func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	log.Printf("SAVING: %v", key)
 	//Don't write if the proto matches
 	data, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
 		log.Printf("HERE %v, %v", data, err)
-		return false, nil
+		return k.Meta.GetVersion(), nil
 	}
 
 	k.Mem[adjustKey(key)] = bytes
@@ -110,7 +110,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (bool, error) {
 	k.Meta.Version++
 	k.saveMeta()
 
-	return true, nil
+	return k.Meta.Version, nil
 }
 
 func (k *Store) localSave(key string, m proto.Message) error {

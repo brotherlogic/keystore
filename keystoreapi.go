@@ -129,10 +129,13 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
-	k.LocalSaveBytes(req.Key, req.Value.Value)
+	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
 
 	// Fanout the writes async
-	go k.fanoutWrite(req)
+	if req.GetWriteVersion() > 0 {
+		req.WriteVersion = v
+		go k.fanoutWrite(req)
+	}
 
 	k.LogFunction("Save", t)
 	return &pb.Empty{}, nil
