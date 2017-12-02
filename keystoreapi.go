@@ -16,7 +16,13 @@ import (
 	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
 	pb "github.com/brotherlogic/keystore/proto"
+	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
+)
+
+const (
+	//VersionKey the key to use in version store
+	VersionKey = "github.com/brotherlogic/keystore"
 )
 
 type serverGetter interface {
@@ -28,12 +34,37 @@ type serverStatusGetter interface {
 	write(*pbd.RegistryEntry, *pb.SaveRequest)
 }
 
+type serverVersionWriter interface {
+	write(*pbvs.Version) error
+}
+
 // KeyStore the main server
 type KeyStore struct {
 	*goserver.GoServer
 	*store.Store
-	serverGetter       serverGetter
-	serverStatusGetter serverStatusGetter
+	serverGetter        serverGetter
+	serverStatusGetter  serverStatusGetter
+	serverVersionWriter serverVersionWriter
+}
+
+type prodVersionWriter struct {
+	resolver func(string) (string, int, error)
+}
+
+func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
+	ip, port, err := serverVersionWriter.resolver("versionserver")
+	conn, err := grpc.Dial(ip+":"+strconv.Itoa(int(port)), grpc.WithInsecure())
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := pbvs.NewVersionServerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	_, err = client.SetVersion(ctx, &pbvs.SetVersionRequest{Set: v})
+	return err
 }
 
 type prodServerGetter struct {
@@ -115,6 +146,7 @@ func Init(p string) *KeyStore {
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
 	ks.serverStatusGetter = &prodServerStatusGetter{}
+	ks.serverVersionWriter = &prodVersionWriter{}
 	return ks
 }
 
@@ -129,6 +161,8 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
 	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
+
+	k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: k.Meta.GetVersion()})
 
 	// Fanout the writes async
 	if req.GetWriteVersion() > 0 {
