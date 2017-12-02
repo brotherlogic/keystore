@@ -78,7 +78,7 @@ func (k *Store) GetStored() []string {
 
 func adjustKey(key string) string {
 	if !strings.HasPrefix(key, "/") && len(key) > 0 {
-		return key[1:]
+		return "/" + key
 	}
 	return key
 }

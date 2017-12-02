@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"testing"
 
@@ -9,6 +10,7 @@ import (
 
 	pbd "github.com/brotherlogic/discovery/proto"
 	pb "github.com/brotherlogic/keystore/proto"
+	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
@@ -28,11 +30,35 @@ func (serverStatusGetter testServerStatusGetter) write(entry *pbd.RegistryEntry,
 	// Do nothing
 }
 
+type testVersionWriter struct {
+	written []*pbvs.Version
+}
+
+func (serverVersionWriter *testVersionWriter) write(version *pbvs.Version) error {
+	serverVersionWriter.written = append(serverVersionWriter.written, version)
+	log.Printf("HERE = %v", serverVersionWriter)
+	return nil
+}
+
 func InitTest(p string) *KeyStore {
 	os.RemoveAll(p)
 	s := Init(p)
 	s.SkipLog = true
+	s.serverVersionWriter = &testVersionWriter{written: make([]*pbvs.Version, 0)}
 	return s
+}
+
+func TestWriteVersion(t *testing.T) {
+	s := InitTest(".testVersionWriter")
+	d := &testVersionWriter{written: make([]*pbvs.Version, 0)}
+	s.serverVersionWriter = d
+	emp, _ := proto.Marshal(&pb.Empty{})
+	s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
+
+	log.Printf("WHA = %v", d)
+	if len(d.written) != 1 {
+		t.Errorf("Version has not been written: %v", d.written)
+	}
 }
 
 func TestMoteSuccess(t *testing.T) {
