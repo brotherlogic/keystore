@@ -3,7 +3,6 @@ package keystoreclient
 import (
 	"context"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -84,9 +83,7 @@ func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message,
 // HardSave performs a save with retries
 func (c *Keystoreclient) HardSave(key string, message proto.Message) error {
 	for i := 0; i < c.retries; i++ {
-		log.Printf("TRY #%v", i)
 		err := c.Save(key, message)
-		log.Printf("SAVE ATTEMPT: %v", err)
 		if err == nil {
 			return err
 		}

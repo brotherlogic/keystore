@@ -2,7 +2,6 @@ package store
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,9 +68,7 @@ func (k *Store) Save(req *pb.SaveRequest) error {
 func (k *Store) GetStored() []string {
 	files := make([]string, 0)
 	filepath.Walk(k.Path, func(path string, info os.FileInfo, err error) error {
-		log.Printf("HERE: %v and %v -> %v", info.IsDir(), err, path)
 		if err == nil && !info.IsDir() && info.Name() != "root.meta" {
-			log.Printf("FILES: %v", files)
 			files = append(files, path[len(k.Path):])
 		}
 		return nil
@@ -88,11 +85,9 @@ func adjustKey(key string) string {
 
 //LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
-	log.Printf("SAVING: %v", key)
 	//Don't write if the proto matches
 	data, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
-		log.Printf("HERE %v, %v", data, err)
 		return k.Meta.GetVersion(), nil
 	}
 
@@ -100,7 +95,6 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 
 	fullpath := k.Path + adjustKey(key)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
-	log.Printf("SAVING TO %v", dir)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		os.MkdirAll(dir, 0777)
 	}
@@ -125,7 +119,6 @@ func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 		return k.Mem[adjustKey(key)], nil
 	}
 
-	log.Printf("READING %v", k.Path+adjustKey(key))
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 
 	if err != nil {
