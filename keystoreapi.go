@@ -48,11 +48,14 @@ type KeyStore struct {
 }
 
 type prodVersionWriter struct {
-	resolver func(string) (string, int, error)
+	resolver func(string) (string, int32, error)
 }
 
 func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 	ip, port, err := serverVersionWriter.resolver("versionserver")
+	if err != nil {
+		return err
+	}
 	conn, err := grpc.Dial(ip+":"+strconv.Itoa(int(port)), grpc.WithInsecure())
 	if err != nil {
 		return err
@@ -146,7 +149,7 @@ func Init(p string) *KeyStore {
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
 	ks.serverStatusGetter = &prodServerStatusGetter{}
-	ks.serverVersionWriter = &prodVersionWriter{}
+	ks.serverVersionWriter = &prodVersionWriter{resolver: utils.Resolve}
 	return ks
 }
 
