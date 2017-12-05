@@ -41,6 +41,7 @@ type serverStatusGetter interface {
 
 type serverVersionWriter interface {
 	write(*pbvs.Version) error
+	read() (*pbvs.Version, error)
 }
 
 // KeyStore the main server
@@ -74,6 +75,25 @@ func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 
 	_, err = client.SetVersion(ctx, &pbvs.SetVersionRequest{Set: v})
 	return err
+}
+
+func (serverVersionWriter prodVersionWriter) read() (*pbvs.Version, error) {
+	ip, port, err := serverVersionWriter.resolver("versionserver")
+	if err != nil {
+		return nil, err
+	}
+	conn, err := grpc.Dial(ip+":"+strconv.Itoa(int(port)), grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	client := pbvs.NewVersionServerClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	val, err := client.GetVersion(ctx, &pbvs.GetVersionRequest{Key: VersionKey})
+	return val.GetVersion(), err
 }
 
 type prodServerGetter struct {

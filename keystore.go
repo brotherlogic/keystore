@@ -20,6 +20,15 @@ func (k *KeyStore) Mote(master bool) error {
 		}
 	}
 
+	//Check that we're up with version store
+	vers, err := k.serverVersionWriter.read()
+	if err != nil {
+		return fmt.Errorf("Unable to determine where we are")
+	}
+	if k.Store.Meta.Version != vers.GetValue() {
+		return fmt.Errorf("We're behind version store")
+	}
+
 	return nil
 }
 
