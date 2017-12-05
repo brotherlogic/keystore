@@ -73,6 +73,10 @@ func (serverVersionWriter *testVersionWriter) write(version *pbvs.Version) error
 	return nil
 }
 
+func (serverVersionWriter *testVersionWriter) read() (*pbvs.Version, error) {
+	return &pbvs.Version{Key: VersionKey, Value: 100}, nil
+}
+
 func InitTest(p string) *KeyStore {
 	os.RemoveAll(p)
 	s := Init(p)
