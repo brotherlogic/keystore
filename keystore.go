@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -25,4 +26,31 @@ func (k *KeyStore) Mote(master bool) error {
 // GetDirectory gets a directory listing
 func (k *KeyStore) GetDirectory(ctx context.Context, req *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
 	return &pb.GetDirectoryResponse{Keys: k.Store.GetStored()}, nil
+}
+
+func (k *KeyStore) resync() error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	reg, err := k.masterGetter.GetDirectory(ctx, &pb.GetDirectoryRequest{})
+
+	if err != nil {
+		return err
+	}
+
+	for _, key := range reg.GetKeys() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		data, err := k.masterGetter.Read(ctx, &pb.ReadRequest{Key: key})
+		if err != nil {
+			return err
+		}
+		_, err = k.LocalSaveBytes(key, data.GetPayload().GetValue())
+		if err != nil {
+			return err
+		}
+	}
+
+	k.Meta.Version = reg.GetVersion()
+	return nil
 }

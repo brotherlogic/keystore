@@ -1,18 +1,51 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"log"
 	"os"
 	"testing"
 
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	pbd "github.com/brotherlogic/discovery/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
+
+type testFailGDMasterGetter struct{}
+
+func (masterGetter testFailGDMasterGetter) GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
+	return nil, errors.New("Built to fail")
+}
+
+func (masterGetter testFailGDMasterGetter) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error) {
+	return nil, errors.New("Built to fail")
+}
+
+type testMasterGetter struct{}
+
+func (masterGetter testMasterGetter) GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
+	return &pb.GetDirectoryResponse{Keys: []string{"key1", "key2"}, Version: 123}, nil
+}
+
+func (masterGetter testMasterGetter) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error) {
+	td := &pb.Empty{}
+	data, _ := proto.Marshal(td)
+	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}}, nil
+}
+
+type testFailRMasterGetter struct{}
+
+func (masterGetter testFailRMasterGetter) GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
+	return &pb.GetDirectoryResponse{Keys: []string{"key1", "key2"}, Version: 123}, nil
+}
+
+func (masterGetter testFailRMasterGetter) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error) {
+	return nil, errors.New("Built to fail")
+}
 
 type testServerGetter struct{}
 
@@ -45,7 +78,37 @@ func InitTest(p string) *KeyStore {
 	s := Init(p)
 	s.SkipLog = true
 	s.serverVersionWriter = &testVersionWriter{written: make([]*pbvs.Version, 0)}
+	s.masterGetter = &testMasterGetter{}
 	return s
+}
+
+func TestResync(t *testing.T) {
+	s := InitTest(".testresync")
+	err := s.resync()
+
+	if err != nil {
+		t.Errorf("Error on resync: %v", err)
+	}
+}
+
+func TestResyncFailOnGD(t *testing.T) {
+	s := InitTest(".testresync")
+	s.masterGetter = &testFailGDMasterGetter{}
+	err := s.resync()
+
+	if err == nil {
+		t.Errorf("No Error on resync: %v", err)
+	}
+}
+
+func TestResyncFailOnR(t *testing.T) {
+	s := InitTest(".testresync")
+	s.masterGetter = &testFailRMasterGetter{}
+	err := s.resync()
+
+	if err == nil {
+		t.Errorf("No Error on resync: %v", err)
+	}
 }
 
 func TestWriteVersion(t *testing.T) {
