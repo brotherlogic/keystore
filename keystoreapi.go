@@ -25,6 +25,11 @@ const (
 	VersionKey = "github.com/brotherlogic/keystore"
 )
 
+type masterGetter interface {
+	GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error)
+	Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error)
+}
+
 type serverGetter interface {
 	getServers() []*pbd.RegistryEntry
 }
@@ -45,6 +50,7 @@ type KeyStore struct {
 	serverGetter        serverGetter
 	serverStatusGetter  serverStatusGetter
 	serverVersionWriter serverVersionWriter
+	masterGetter        masterGetter
 }
 
 type prodVersionWriter struct {
