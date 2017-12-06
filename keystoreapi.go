@@ -22,7 +22,7 @@ import (
 
 const (
 	//VersionKey the key to use in version store
-	VersionKey = "github.com/brotherlogic/keystore"
+	VersionKey = "github.com.brotherlogic.keystore"
 )
 
 type masterGetter interface {
