@@ -19,15 +19,15 @@ func (k *KeyStore) Mote(master bool) error {
 			return fmt.Errorf("We're too behind to be master")
 		}
 	}
-
-	//Check that we're up with version store
-	vers, err := k.serverVersionWriter.read()
-	if err != nil {
-		return fmt.Errorf("Unable to determine where we are: %v", err)
-	}
-	if k.Store.Meta.Version != vers.GetValue() {
-		return fmt.Errorf("We're behind version store: %v and %v", k.Store.Meta, vers)
-	}
+	/*
+		//Check that we're up with version store
+		vers, err := k.serverVersionWriter.read()
+		if err != nil {
+			return fmt.Errorf("Unable to determine where we are: %v", err)
+		}
+		if k.Store.Meta.Version != vers.GetValue() {
+			return fmt.Errorf("We're behind version store: %v and %v", k.Store.Meta, vers)
+		}*/
 
 	return nil
 }
