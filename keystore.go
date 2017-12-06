@@ -26,7 +26,7 @@ func (k *KeyStore) Mote(master bool) error {
 		return fmt.Errorf("Unable to determine where we are")
 	}
 	if k.Store.Meta.Version != vers.GetValue() {
-		return fmt.Errorf("We're behind version store")
+		return fmt.Errorf("We're behind version store: %v and %v", k.Store.Meta, vers)
 	}
 
 	return nil
