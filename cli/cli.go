@@ -22,7 +22,9 @@ func findServer(name string) (string, int) {
 	defer conn.Close()
 
 	registry := pbdi.NewDiscoveryServiceClient(conn)
-	rs, _ := registry.ListAllServices(context.Background(), &pbdi.Empty{}, grpc.FailFast(false))
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+	defer cancel()
+	rs, _ := registry.ListAllServices(ctx, &pbdi.Empty{}, grpc.FailFast(false))
 
 	for _, r := range rs.Services {
 		if r.Name == name {
@@ -35,11 +37,13 @@ func findServer(name string) (string, int) {
 
 func main() {
 	client := keystoreclient.GetClient(findServer)
+	log.Printf("LEN = %v", len(os.Args))
 	if len(os.Args) == 1 {
-		err := client.Save("/testingkeytryagain", &pb.Card{Text: "Testing222"})
-		log.Fatalf("Error: %v", err)
+		err := client.Save("/testingkeytryagain2", &pb.Card{Text: "Testing222"})
+		log.Printf("Error: %v", err)
 
 		host, port := findServer("keystore")
+		log.Printf("PORT = %v", port)
 		if port > 0 {
 			conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure())
 			if err != nil {
