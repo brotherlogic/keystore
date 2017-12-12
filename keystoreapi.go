@@ -191,7 +191,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	t := time.Now()
 	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
 
-	k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
+	go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
 
 	// Fanout the writes async
 	if req.GetWriteVersion() > 0 {

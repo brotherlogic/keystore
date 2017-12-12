@@ -37,13 +37,10 @@ func findServer(name string) (string, int) {
 
 func main() {
 	client := keystoreclient.GetClient(findServer)
-	log.Printf("LEN = %v", len(os.Args))
 	if len(os.Args) == 1 {
-		err := client.Save("/testingkeytryagain2", &pb.Card{Text: "Testing222"})
-		log.Printf("Error: %v", err)
+		client.Save("/testingkeytryagain2", &pb.Card{Text: "Testing222"})
 
 		host, port := findServer("keystore")
-		log.Printf("PORT = %v", port)
 		if port > 0 {
 			conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure())
 			if err != nil {
