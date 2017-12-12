@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
@@ -121,6 +122,8 @@ func TestWriteVersion(t *testing.T) {
 	s.serverVersionWriter = d
 	emp, _ := proto.Marshal(&pb.Empty{})
 	s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
+
+	time.Sleep(time.Second)
 
 	log.Printf("WHA = %v", d)
 	if len(d.written) != 1 {
