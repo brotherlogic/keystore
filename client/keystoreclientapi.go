@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/keystore/proto"
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 const (
@@ -57,7 +58,7 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRes
 			defer conn.Close()
 
 			store := pb.NewKeyStoreServiceClient(conn)
-			return store.Read(ctx, req, grpc.FailFast(false))
+			return store.Read(ctx, req, grpc.FailFast(false), grpc.UseCompressor("gzip"))
 		}
 		return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
 	}
