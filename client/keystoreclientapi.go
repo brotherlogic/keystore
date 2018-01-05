@@ -52,12 +52,13 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	ip, port := p.getter("keystore")
 	if port > 0 {
-		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
+		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithMaxMsgSize(1024*1024*1024))
 		if err == nil {
 			defer conn.Close()
 
 			store := pb.NewKeyStoreServiceClient(conn)
-			return store.Read(ctx, req, grpc.FailFast(false))
+			r, e := store.Read(ctx, req, grpc.FailFast(false), grpc.UseCompressor("gzip"))
+			return r, e
 		}
 		return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
 	}
