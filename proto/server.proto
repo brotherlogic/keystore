@@ -34,6 +34,12 @@ message GetDirectoryResponse {
 	int64 version = 2;
 }
 
+enum State {
+	SOFT_SYNC = 0;
+	HARD_SYNC = 1;
+	MASTER = 2;
+}
+
 service KeyStoreService {
         rpc Save (SaveRequest) returns (Empty) {};
 				rpc Read (ReadRequest) returns (ReadResponse) {};

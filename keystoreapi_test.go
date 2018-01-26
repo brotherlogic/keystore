@@ -84,6 +84,7 @@ func InitTest(p string) *KeyStore {
 	s.SkipLog = true
 	s.serverVersionWriter = &testVersionWriter{written: make([]*pbvs.Version, 0)}
 	s.masterGetter = &testMasterGetter{}
+	s.mote = true
 	return s
 }
 
@@ -139,7 +140,7 @@ func TestMoteSuccess(t *testing.T) {
 
 	val := s.Mote(true)
 	if val != nil {
-		t.Errorf("Server has not accepted mote when it was way ahead of the pack")
+		t.Errorf("Server has not accepted mote when it was way ahead of the pack:%v", val)
 	}
 }
 
