@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -181,6 +182,7 @@ func Init(p string) *KeyStore {
 
 func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
+	k.Log(fmt.Sprintf("FANOUT: %v", servers))
 	for _, server := range servers {
 		k.serverStatusGetter.write(server, req)
 	}
@@ -193,9 +195,12 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 
 	go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
 
+	k.Log(fmt.Sprintf("Prepping for fanout: %v", req.GetWriteVersion()))
+
 	// Fanout the writes async
 	if req.GetWriteVersion() > 0 {
 		req.WriteVersion = v
+		k.Log(fmt.Sprintf("Doing a fanout write: %v", req.WriteVersion))
 		go k.fanoutWrite(req)
 	}
 
