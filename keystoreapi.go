@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -53,12 +54,15 @@ type KeyStore struct {
 	serverStatusGetter  serverStatusGetter
 	serverVersionWriter serverVersionWriter
 	masterGetter        masterGetter
+	state               pb.State
+	mote                bool
 }
 
 type prodVersionWriter struct {
 	resolver func(string) (string, int32, error)
 }
 
+// This performs a fan out write
 func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 	ip, port, err := serverVersionWriter.resolver("versionserver")
 	if err != nil {
@@ -166,7 +170,10 @@ func (k KeyStore) DoRegister(server *grpc.Server) {
 
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
-	return []*pbgs.State{&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()}}
+	return []*pbgs.State{
+		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
+		&pbgs.State{Key: "state", Value: int64(k.state)},
+	}
 }
 
 //Init a keystore
@@ -188,9 +195,60 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	}
 }
 
+//HardSync does a hard sync with an available keystore
+func (k *KeyStore) HardSync() error {
+	host, port := k.GetIP("keystore")
+	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure())
+	defer conn.Close()
+	if err != nil {
+		return err
+	}
+
+	client := pb.NewKeyStoreServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	meta, err := client.GetMeta(ctx, &pb.Empty{})
+	if err != nil {
+		return err
+	}
+
+	// Pull the GetDirectory
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	dir, err := client.GetDirectory(ctx, &pb.GetDirectoryRequest{})
+	if err != nil {
+		return err
+	}
+
+	// Process and Store
+	for _, entry := range dir.GetKeys() {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel()
+		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
+		if err != nil {
+			return err
+		}
+		k.LocalSaveBytes(entry, data.GetPayload().GetValue())
+	}
+
+	//Update the meta
+	k.Meta.Version = meta.GetVersion()
+
+	k.state = pb.State_SOFT_SYNC
+
+	return nil
+}
+
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
+
+	if req.GetWriteVersion() > k.Store.Meta.GetVersion()+1 {
+		k.state = pb.State_HARD_SYNC
+		go k.HardSync()
+		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
+	}
+
 	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
 
 	go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
@@ -229,6 +287,7 @@ func (k KeyStore) ReportHealth() bool {
 func main() {
 	var folder = flag.String("folder", "/media/disk1", "The folder to use as a base")
 	var quiet = flag.Bool("quiet", false, "Show all output")
+	var mote = flag.Bool("mote", true, "Allows us to mote")
 	flag.Parse()
 
 	server := Init(*folder)
@@ -241,6 +300,7 @@ func main() {
 
 	server.PrepServer()
 	server.RegisterServer("keystore", false)
+	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
 	server.Serve()
 }

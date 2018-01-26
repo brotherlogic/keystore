@@ -11,6 +11,11 @@ import (
 
 //Mote promotes or demotes this server
 func (k *KeyStore) Mote(master bool) error {
+
+	if !k.mote {
+		return fmt.Errorf("Explicitly not moting, sorry")
+	}
+
 	entries := k.serverGetter.getServers()
 	for _, entry := range entries {
 		meta := k.serverStatusGetter.getStatus(entry)
@@ -27,6 +32,10 @@ func (k *KeyStore) Mote(master bool) error {
 	}
 	if k.Store.Meta.Version < vers.GetValue() {
 		return fmt.Errorf("We're behind version store: %v and %v", k.Store.Meta, vers)
+	}
+
+	if master {
+		k.state = pb.State_MASTER
 	}
 
 	return nil

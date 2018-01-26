@@ -11,6 +11,9 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/keystore/proto"
+
+	//Needed to pull in gzip encoding init
+	_ "google.golang.org/grpc/encoding/gzip"
 )
 
 const (
@@ -52,7 +55,7 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	ip, port := p.getter("keystore")
 	if port > 0 {
-		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithMaxMsgSize(1024*1024*1024))
+		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")), grpc.WithMaxMsgSize(1024*1024*1024))
 		if err == nil {
 			defer conn.Close()
 
