@@ -198,7 +198,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	k.Log(fmt.Sprintf("Prepping for fanout: %v", req.GetWriteVersion()))
 
 	// Fanout the writes async
-	if req.GetWriteVersion() > 0 {
+	if req.GetWriteVersion() == 0 {
 		req.WriteVersion = v
 		k.Log(fmt.Sprintf("Doing a fanout write: %v", req.WriteVersion))
 		go k.fanoutWrite(req)
