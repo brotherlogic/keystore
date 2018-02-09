@@ -116,9 +116,9 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
-		list, err := client.ListAllServices(ctx, &pbd.Empty{})
+		list, err := client.ListAllServices(ctx, &pbd.ListRequest{})
 		if err == nil {
-			for _, l := range list.Services {
+			for _, l := range list.GetServices().Services {
 				if l.GetName() == "keystore" && l.GetIdentifier() != serverGetter.server {
 					servers = append(servers, l)
 				}
