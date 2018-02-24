@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/cardserver/card"
-	pbdi "github.com/brotherlogic/discovery/proto"
 	pbk "github.com/brotherlogic/keystore/proto"
 
 	//Needed to pull in gzip encoding init
@@ -21,21 +20,8 @@ import (
 )
 
 func findServer(name string) (string, int) {
-	conn, _ := grpc.Dial(utils.Discover, grpc.WithInsecure())
-	defer conn.Close()
-
-	registry := pbdi.NewDiscoveryServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-	rs, _ := registry.ListAllServices(ctx, &pbdi.Empty{}, grpc.FailFast(false))
-
-	for _, r := range rs.Services {
-		if r.Name == name {
-			return r.Ip, int(r.Port)
-		}
-	}
-
-	return "", -1
+	ip, port, _ := utils.Resolve(name)
+	return ip, int(port)
 }
 
 func main() {
