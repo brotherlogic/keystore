@@ -251,12 +251,11 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 
 	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
 
-	go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
-
 	k.Log(fmt.Sprintf("Prepping for fanout: %v", req.GetWriteVersion()))
 
 	// Fanout the writes async
 	if req.GetWriteVersion() == 0 {
+		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
 		req.WriteVersion = v
 		k.Log(fmt.Sprintf("Doing a fanout write: %v", req.WriteVersion))
 		go k.fanoutWrite(req)
