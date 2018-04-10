@@ -81,6 +81,7 @@ func (serverVersionWriter *testVersionWriter) read() (*pbvs.Version, error) {
 func InitTest(p string) *KeyStore {
 	os.RemoveAll(p)
 	s := Init(p)
+	s.GoServer.Registry = &pbd.RegistryEntry{Identifier: "madeup"}
 	s.SkipLog = true
 	s.serverVersionWriter = &testVersionWriter{written: make([]*pbvs.Version, 0)}
 	s.masterGetter = &testMasterGetter{}
