@@ -255,7 +255,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 
 	// Fanout the writes async
 	if req.GetWriteVersion() == 0 {
-		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v})
+		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
 		req.WriteVersion = v
 		k.Log(fmt.Sprintf("Doing a fanout write: %v", req.WriteVersion))
 		go k.fanoutWrite(req)
