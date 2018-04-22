@@ -21,7 +21,7 @@ func (k *KeyStore) Mote(master bool) error {
 		meta := k.serverStatusGetter.getStatus(entry)
 
 		if meta.GetVersion() > k.Meta.GetVersion() {
-			return fmt.Errorf("We're too behind to be master")
+			return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.Meta.GetVersion())
 		}
 	}
 

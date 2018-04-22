@@ -45,6 +45,8 @@ func getKeys(s *pbdi.RegistryEntry) []string {
 	defer cancel()
 	rs, err := registry.GetDirectory(ctx, &pb.GetDirectoryRequest{})
 
+	log.Printf("KEYS = %v", rs)
+
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
@@ -81,11 +83,19 @@ func main() {
 		}
 	}
 
+	fmt.Printf("Found main server %v from %v\n\n", mainServer, len(servers))
+
 	for _, key := range getKeys(mainServer) {
-		fmt.Printf("Key: %v = %v\n", key, read(mainServer, key))
+		vm := read(mainServer, key)
+		fmt.Printf("Key: %v = %v\n", key, vm)
 		for _, s := range servers {
 			if !s.GetMaster() {
-				fmt.Printf(" Key:%v = %v", key, read(s, key))
+				v := read(s, key)
+				if v != vm {
+					fmt.Printf(" Key:%v = %v [FAIL]\n", key, v)
+				} else {
+					fmt.Printf(" Key:%v = %v\n", key, v)
+				}
 			}
 		}
 	}

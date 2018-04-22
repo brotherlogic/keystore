@@ -284,7 +284,7 @@ func (k KeyStore) ReportHealth() bool {
 }
 
 func main() {
-	var folder = flag.String("folder", "/media/disk1", "The folder to use as a base")
+	var folder = flag.String("folder", "/media/keystore", "The folder to use as a base")
 	var quiet = flag.Bool("quiet", false, "Show all output")
 	var mote = flag.Bool("mote", true, "Allows us to mote")
 	flag.Parse()
