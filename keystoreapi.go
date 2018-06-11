@@ -38,7 +38,7 @@ type serverGetter interface {
 
 type serverStatusGetter interface {
 	getStatus(*pbd.RegistryEntry) *pb.StoreMeta
-	write(*pbd.RegistryEntry, *pb.SaveRequest)
+	write(*pbd.RegistryEntry, *pb.SaveRequest) error
 }
 
 type serverVersionWriter interface {
@@ -56,6 +56,7 @@ type KeyStore struct {
 	masterGetter        masterGetter
 	state               pb.State
 	mote                bool
+	transferFailCount   int64
 }
 
 type prodVersionWriter struct {
@@ -131,7 +132,7 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 
 type prodServerStatusGetter struct{}
 
-func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) {
+func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) error {
 	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
 	if err == nil {
 		defer conn.Close()
@@ -139,8 +140,10 @@ func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry,
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		client.Save(ctx, req)
+		_, err = client.Save(ctx, req)
+		return err
 	}
+	return err
 }
 
 func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
@@ -173,6 +176,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
 		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
+		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 	}
 }
 
@@ -191,7 +195,10 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
 	k.Log(fmt.Sprintf("FANOUT: %v", servers))
 	for _, server := range servers {
-		k.serverStatusGetter.write(server, req)
+		err := k.serverStatusGetter.write(server, req)
+		if err != nil {
+			k.transferFailCount++
+		}
 	}
 }
 
