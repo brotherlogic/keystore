@@ -60,6 +60,7 @@ type KeyStore struct {
 	elapsed             int64
 	coreWrites          int64
 	fanWrites           int64
+	transferError       string
 }
 
 type prodVersionWriter struct {
@@ -183,6 +184,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
 		&pbgs.State{Key: "corew", Value: k.coreWrites},
 		&pbgs.State{Key: "fanw", Value: k.fanWrites},
+		&pbgs.State{Key: "terror", Text: k.transferError},
 	}
 }
 
@@ -204,6 +206,7 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	for _, server := range servers {
 		err := k.serverStatusGetter.write(server, req)
 		if err != nil {
+			k.transferError = fmt.Sprintf("%v", err)
 			k.transferFailCount++
 		}
 	}
