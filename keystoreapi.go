@@ -57,6 +57,7 @@ type KeyStore struct {
 	state               pb.State
 	mote                bool
 	transferFailCount   int64
+	elapsed             int64
 }
 
 type prodVersionWriter struct {
@@ -177,6 +178,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
+		&pbgs.State{Key: "elapsed", Value: k.elapsed},
 	}
 }
 
@@ -194,12 +196,14 @@ func Init(p string) *KeyStore {
 func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
 	k.Log(fmt.Sprintf("FANOUT: %v", servers))
+	t := time.Now()
 	for _, server := range servers {
 		err := k.serverStatusGetter.write(server, req)
 		if err != nil {
 			k.transferFailCount++
 		}
 	}
+	k.elapsed = time.Now().Unix() - t.Unix()
 }
 
 //HardSync does a hard sync with an available keystore
