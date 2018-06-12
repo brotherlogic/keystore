@@ -170,8 +170,8 @@ func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEn
 }
 
 // DoRegister does RPC registration
-func (k KeyStore) DoRegister(server *grpc.Server) {
-	pb.RegisterKeyStoreServiceServer(server, &k)
+func (k *KeyStore) DoRegister(server *grpc.Server) {
+	pb.RegisterKeyStoreServiceServer(server, k)
 }
 
 // GetState gets the state of the server
@@ -299,7 +299,7 @@ func (k *KeyStore) GetMeta(ctx context.Context, req *pb.Empty) (*pb.StoreMeta, e
 }
 
 // ReportHealth alerts if we're not healthy
-func (k KeyStore) ReportHealth() bool {
+func (k *KeyStore) ReportHealth() bool {
 	return true
 }
 
