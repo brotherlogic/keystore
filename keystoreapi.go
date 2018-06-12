@@ -210,7 +210,7 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 			k.transferFailCount++
 		}
 	}
-	k.elapsed = time.Now().Sub(t).Nanoseconds()
+	k.elapsed = time.Now().Sub(t).Nanoseconds() / 1000000
 }
 
 //HardSync does a hard sync with an available keystore
