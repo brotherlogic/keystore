@@ -80,7 +80,7 @@ func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 	defer conn.Close()
 
 	client := pbvs.NewVersionServerClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	_, err = client.SetVersion(ctx, &pbvs.SetVersionRequest{Set: v})
