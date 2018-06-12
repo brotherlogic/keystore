@@ -58,6 +58,8 @@ type KeyStore struct {
 	mote                bool
 	transferFailCount   int64
 	elapsed             int64
+	coreWrites          int64
+	fanWrites           int64
 }
 
 type prodVersionWriter struct {
@@ -179,6 +181,8 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "state", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
+		&pbgs.State{Key: "corew", Value: k.coreWrites},
+		&pbgs.State{Key: "fanw", Value: k.fanWrites},
 	}
 }
 
@@ -253,6 +257,11 @@ func (k *KeyStore) HardSync() error {
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
+	if req.GetWriteVersion() == 0 {
+		k.coreWrites++
+	} else {
+		k.fanWrites++
+	}
 
 	if req.GetWriteVersion() > k.Store.Meta.GetVersion()+1 {
 		k.state = pb.State_HARD_SYNC
