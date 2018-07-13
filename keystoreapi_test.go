@@ -60,8 +60,8 @@ func (serverStatusGetter testServerStatusGetter) getStatus(entry *pbd.RegistryEn
 	return &pb.StoreMeta{Version: 75}
 }
 
-func (serverStatusGetter testServerStatusGetter) write(entry *pbd.RegistryEntry, sr *pb.SaveRequest) {
-	// Do nothing
+func (serverStatusGetter testServerStatusGetter) write(entry *pbd.RegistryEntry, sr *pb.SaveRequest) error {
+	return nil
 }
 
 type testVersionWriter struct {

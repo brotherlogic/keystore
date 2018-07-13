@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"strconv"
@@ -37,7 +38,7 @@ type serverGetter interface {
 
 type serverStatusGetter interface {
 	getStatus(*pbd.RegistryEntry) *pb.StoreMeta
-	write(*pbd.RegistryEntry, *pb.SaveRequest)
+	write(*pbd.RegistryEntry, *pb.SaveRequest) error
 }
 
 type serverVersionWriter interface {
@@ -55,6 +56,11 @@ type KeyStore struct {
 	masterGetter        masterGetter
 	state               pb.State
 	mote                bool
+	transferFailCount   int64
+	elapsed             int64
+	coreWrites          int64
+	fanWrites           int64
+	transferError       string
 }
 
 type prodVersionWriter struct {
@@ -74,7 +80,7 @@ func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 	defer conn.Close()
 
 	client := pbvs.NewVersionServerClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
 	_, err = client.SetVersion(ctx, &pbvs.SetVersionRequest{Set: v})
@@ -130,7 +136,7 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 
 type prodServerStatusGetter struct{}
 
-func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) {
+func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) error {
 	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
 	if err == nil {
 		defer conn.Close()
@@ -138,8 +144,10 @@ func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry,
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
-		client.Save(ctx, req)
+		_, err = client.Save(ctx, req)
+		return err
 	}
+	return err
 }
 
 func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
@@ -163,8 +171,8 @@ func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEn
 }
 
 // DoRegister does RPC registration
-func (k KeyStore) DoRegister(server *grpc.Server) {
-	pb.RegisterKeyStoreServiceServer(server, &k)
+func (k *KeyStore) DoRegister(server *grpc.Server) {
+	pb.RegisterKeyStoreServiceServer(server, k)
 }
 
 // GetState gets the state of the server
@@ -172,6 +180,11 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
 		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
+		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
+		&pbgs.State{Key: "elapsed", Value: k.elapsed},
+		&pbgs.State{Key: "corew", Value: k.coreWrites},
+		&pbgs.State{Key: "fanw", Value: k.fanWrites},
+		&pbgs.State{Key: "terror", Text: k.transferError},
 	}
 }
 
@@ -188,9 +201,15 @@ func Init(p string) *KeyStore {
 
 func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
+	t := time.Now()
 	for _, server := range servers {
-		k.serverStatusGetter.write(server, req)
+		err := k.serverStatusGetter.write(server, req)
+		if err != nil {
+			k.transferError = fmt.Sprintf("%v", err)
+			k.transferFailCount++
+		}
 	}
+	k.elapsed = time.Now().Sub(t).Nanoseconds() / 1000000
 }
 
 //HardSync does a hard sync with an available keystore
@@ -240,6 +259,11 @@ func (k *KeyStore) HardSync() error {
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	t := time.Now()
+	if req.GetWriteVersion() == 0 {
+		k.coreWrites++
+	} else {
+		k.fanWrites++
+	}
 
 	if req.GetWriteVersion() > k.Store.Meta.GetVersion()+1 {
 		k.state = pb.State_HARD_SYNC
@@ -274,7 +298,7 @@ func (k *KeyStore) GetMeta(ctx context.Context, req *pb.Empty) (*pb.StoreMeta, e
 }
 
 // ReportHealth alerts if we're not healthy
-func (k KeyStore) ReportHealth() bool {
+func (k *KeyStore) ReportHealth() bool {
 	return true
 }
 
