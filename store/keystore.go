@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -113,6 +114,9 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 
 func (k *Store) localSave(key string, m proto.Message) error {
 	data, _ := proto.Marshal(m)
+	if len(data) == 0 {
+		return fmt.Errorf("Cannot save empty proto")
+	}
 	_, err := k.LocalSaveBytes(key, data)
 	return err
 }

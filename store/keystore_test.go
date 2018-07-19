@@ -23,6 +23,17 @@ func TestBasicSave(t *testing.T) {
 	}
 }
 
+func TestEmptySave(t *testing.T) {
+	tp := &pb.TestProto{}
+
+	s := InitTest(".testemptysave", true)
+	err := s.localSave("/test/path", tp)
+
+	if err == nil {
+		t.Errorf("Empty proto was saved correctly")
+	}
+}
+
 func TestIncrementOfMeta(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
 	s := InitTest(".testMetaIncrement", true)
