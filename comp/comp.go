@@ -45,8 +45,6 @@ func getKeys(s *pbdi.RegistryEntry) []string {
 	defer cancel()
 	rs, err := registry.GetDirectory(ctx, &pb.GetDirectoryRequest{})
 
-	log.Printf("KEYS = %v", rs)
-
 	if err != nil {
 		log.Fatalf("Error: %v", err)
 	}
