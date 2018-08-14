@@ -1,14 +1,14 @@
 package keystoreclient
 
 import (
-	"context"
 	"errors"
 	"time"
 
+	"github.com/brotherlogic/keystore/store"
 	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	pbd "github.com/brotherlogic/keystore/proto"
-	"github.com/brotherlogic/keystore/store"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
@@ -48,16 +48,14 @@ type Keystoreclient struct {
 }
 
 // Save saves a proto
-func (c *Keystoreclient) Save(key string, message proto.Message) error {
+func (c *Keystoreclient) Save(ctx context.Context, key string, message proto.Message) error {
 	bytes, _ := proto.Marshal(message)
-	_, err := c.linker.Save(context.Background(), &pbd.SaveRequest{Key: key, Value: &google_protobuf.Any{Value: bytes}})
+	_, err := c.linker.Save(ctx, &pbd.SaveRequest{Key: key, Value: &google_protobuf.Any{Value: bytes}})
 	return err
 }
 
 // Load loads a proto
-func (c *Keystoreclient) Read(key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
+func (c *Keystoreclient) Read(ctx context.Context, key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
 	res, err := c.linker.Read(ctx, &pbd.ReadRequest{Key: key})
 	if err != nil {
 		return nil, nil, err
