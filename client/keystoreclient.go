@@ -65,9 +65,9 @@ func (c *Keystoreclient) Read(ctx context.Context, key string, typ proto.Message
 }
 
 // HardRead performs a read with retries
-func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
+func (c *Keystoreclient) HardRead(ctx context.Context, key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
 	for i := 0; i < c.retries; i++ {
-		v, val, err := c.Read(key, typ)
+		v, val, err := c.Read(ctx, key, typ)
 		if err == nil {
 			return v, val, err
 		}
@@ -79,9 +79,9 @@ func (c *Keystoreclient) HardRead(key string, typ proto.Message) (proto.Message,
 }
 
 // HardSave performs a save with retries
-func (c *Keystoreclient) HardSave(key string, message proto.Message) error {
+func (c *Keystoreclient) HardSave(ctx context.Context, key string, message proto.Message) error {
 	for i := 0; i < c.retries; i++ {
-		err := c.Save(key, message)
+		err := c.Save(ctx, key, message)
 		if err == nil {
 			return err
 		}
