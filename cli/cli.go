@@ -27,7 +27,7 @@ func findServer(name string) (string, int) {
 func main() {
 	client := keystoreclient.GetClient(findServer)
 	if len(os.Args) == 1 {
-		client.Save("/testingkeytryagain2", &pb.Card{Text: "Testing222"})
+		client.Save(context.Background(), "/testingkeytryagain2", &pb.Card{Text: "Testing222"})
 
 		host, port := findServer("keystore")
 		if port > 0 {

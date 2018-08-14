@@ -10,7 +10,7 @@ import (
 )
 
 //Mote promotes or demotes this server
-func (k *KeyStore) Mote(master bool) error {
+func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 
 	if !k.mote {
 		return fmt.Errorf("Explicitly not moting, sorry")

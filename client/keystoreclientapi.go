@@ -1,13 +1,13 @@
 package keystoreclient
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"time"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/keystore/proto"
