@@ -143,7 +143,7 @@ func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry,
 		defer conn.Close()
 		client := pb.NewKeyStoreServiceClient(conn)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
 		defer cancel()
 		_, err = client.Save(ctx, req)
 		return err
