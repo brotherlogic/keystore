@@ -61,6 +61,7 @@ type KeyStore struct {
 	coreWrites          int64
 	fanWrites           int64
 	transferError       string
+	catchups            int64
 }
 
 type prodVersionWriter struct {
@@ -185,6 +186,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "corew", Value: k.coreWrites},
 		&pbgs.State{Key: "fanw", Value: k.fanWrites},
 		&pbgs.State{Key: "terror", Text: k.transferError},
+		&pbgs.State{Key: "catchups", Value: k.catchups},
 	}
 }
 
@@ -266,6 +268,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	}
 
 	if req.GetWriteVersion() > k.Store.Meta.GetVersion()+1 {
+		k.catchups++
 		k.state = pb.State_HARD_SYNC
 		go k.HardSync()
 		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
