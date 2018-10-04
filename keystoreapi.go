@@ -62,6 +62,7 @@ type KeyStore struct {
 	fanWrites           int64
 	transferError       string
 	catchups            int64
+	reads               int64
 }
 
 type prodVersionWriter struct {
@@ -187,6 +188,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "fanw", Value: k.fanWrites},
 		&pbgs.State{Key: "terror", Text: k.transferError},
 		&pbgs.State{Key: "catchups", Value: k.catchups},
+		&pbgs.State{Key: "reads", Value: int64(k.reads)},
 	}
 }
 
@@ -289,6 +291,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
+	k.reads++
 	t := time.Now()
 	data, _ := k.LocalReadBytes(req.Key)
 	k.LogFunction("Read", t)
