@@ -262,7 +262,6 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	t := time.Now()
 	if req.GetWriteVersion() == 0 {
 		k.coreWrites++
 	} else {
@@ -285,16 +284,13 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		go k.fanoutWrite(req)
 	}
 
-	k.LogFunction("Save", t)
 	return &pb.Empty{}, nil
 }
 
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
-	k.reads++
 	t := time.Now()
 	data, _ := k.LocalReadBytes(req.Key)
-	k.LogFunction("Read", t)
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
 }
 
