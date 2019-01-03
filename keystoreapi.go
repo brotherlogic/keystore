@@ -18,6 +18,7 @@ import (
 	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
 	pb "github.com/brotherlogic/keystore/proto"
+	pbt "github.com/brotherlogic/tracer/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
@@ -262,6 +263,7 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	ctx = k.LogTrace(ctx, "Save", time.Now(), pbt.Milestone_START_FUNCTION)
 	if req.GetWriteVersion() == 0 {
 		k.coreWrites++
 	} else {
@@ -284,6 +286,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		go k.fanoutWrite(req)
 	}
 
+	k.LogTrace(ctx, "Save", time.Now(), pbt.Milestone_END_FUNCTION)
 	return &pb.Empty{}, nil
 }
 
