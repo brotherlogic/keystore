@@ -139,7 +139,7 @@ func TestMoteSuccess(t *testing.T) {
 	s.serverStatusGetter = &testServerStatusGetter{}
 	s.Store.Meta.Version = 100
 
-	val := s.Mote(true)
+	val := s.Mote(context.Background(), true)
 	if val != nil {
 		t.Errorf("Server has not accepted mote when it was way ahead of the pack:%v", val)
 	}
@@ -151,7 +151,7 @@ func TestMoteFail(t *testing.T) {
 	s.serverStatusGetter = &testServerStatusGetter{}
 	s.Store.Meta.Version = 50
 
-	val := s.Mote(true)
+	val := s.Mote(context.Background(), true)
 	if val == nil {
 		t.Errorf("Server has not accepted mote when it was way behind")
 	}

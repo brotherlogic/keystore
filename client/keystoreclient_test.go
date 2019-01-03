@@ -40,13 +40,13 @@ func (c *countFail) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadRe
 func TestSaveAndLoad(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
 	client := GetTestClient(".testsaveandload")
-	err := client.Save("/testkey", tp)
+	err := client.Save(context.Background(), "/testkey", tp)
 
 	if err != nil {
 		t.Fatalf("Error in saving message %v", err)
 	}
 
-	tp2t, _, err := client.Read("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.Read(context.Background(), "/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -62,13 +62,13 @@ func TestSaveFail(t *testing.T) {
 	client := GetTestClient(".testsaveandload")
 	linker := client.linker.(*localLinker)
 	client.linker = &countFail{l: linker, c: 2}
-	err := client.HardSave("/testkey", tp)
+	err := client.HardSave(context.Background(), "/testkey", tp)
 
 	if err != nil {
 		t.Fatalf("Error in saving message %v", err)
 	}
 
-	tp2t, _, err := client.Read("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.Read(context.Background(), "/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -84,7 +84,7 @@ func TestSaveFailHard(t *testing.T) {
 	client := GetTestClient(".testsaveandload")
 	linker := client.linker.(*localLinker)
 	client.linker = &countFail{l: linker, retries: 10}
-	err := client.HardSave("/testkey", tp)
+	err := client.HardSave(context.Background(), "/testkey", tp)
 
 	if err == nil {
 		t.Fatalf("No error message on a hard save %v", err)
@@ -96,14 +96,14 @@ func TestReadFail(t *testing.T) {
 	client := GetTestClient(".testsaveandload")
 	linker := client.linker.(*localLinker)
 	client.linker = &countFail{l: linker, c: 0}
-	err := client.HardSave("/testkey", tp)
+	err := client.HardSave(context.Background(), "/testkey", tp)
 
 	if err != nil {
 		t.Fatalf("Error in saving message %v", err)
 	}
 
 	client.linker = &countFail{l: linker}
-	tp2t, _, err := client.HardRead("/testkey", &pb.TestProto{})
+	tp2t, _, err := client.HardRead(context.Background(), "/testkey", &pb.TestProto{})
 	if err != nil || tp2t == nil {
 		t.Fatalf("Error in loading message %v with %v", err, tp2t)
 	}
@@ -119,10 +119,10 @@ func TestReadFailHard(t *testing.T) {
 	client := GetTestClient(".testsaveandload")
 	linker := client.linker.(*localLinker)
 	client.linker = &countFail{l: linker, c: 0}
-	client.HardSave("/testkey", tp)
+	client.HardSave(context.Background(), "/testkey", tp)
 
 	client.linker = &countFail{l: linker, c: 1, retries: 100}
-	_, _, err := client.HardRead("/testkey", &pb.TestProto{})
+	_, _, err := client.HardRead(context.Background(), "/testkey", &pb.TestProto{})
 	if err == nil {
 		t.Fatalf("No error message on a hard read %v", err)
 	}
