@@ -190,6 +190,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "terror", Text: k.transferError},
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
+		&pbgs.State{Key: "keys", Value: int64(len(k.Store.Mem))},
 	}
 }
 
