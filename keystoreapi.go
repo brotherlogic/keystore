@@ -8,6 +8,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/brotherlogic/goserver"
 	"github.com/brotherlogic/keystore/store"
@@ -191,6 +192,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
 		&pbgs.State{Key: "keys", Value: int64(len(k.Store.Mem))},
+		&pbgs.State{Key: "cache_mem", Value: int64(unsafe.Sizeof(k.Store))},
 	}
 }
 
@@ -323,6 +325,7 @@ func main() {
 	}
 
 	server.PrepServer()
+	server.RPCTracing = true
 	server.RegisterServer("keystore", false)
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
