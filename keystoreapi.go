@@ -325,7 +325,7 @@ func main() {
 	}
 
 	server.PrepServer()
-	server.RPCTrace = true
+	server.RPCTracing = true
 	server.RegisterServer("keystore", false)
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
