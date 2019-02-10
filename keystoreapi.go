@@ -8,7 +8,6 @@ import (
 	"log"
 	"strconv"
 	"time"
-	"unsafe"
 
 	"github.com/brotherlogic/goserver"
 	"github.com/brotherlogic/keystore/store"
@@ -181,6 +180,12 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
+	mem := int64(0)
+	k.Store.MemMutex.Lock()
+	for _, v := range k.Store.Mem {
+		mem += int64(len(v))
+	}
+	k.Store.MemMutex.Unlock()
 	return []*pbgs.State{
 		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
@@ -192,7 +197,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
 		&pbgs.State{Key: "keys", Value: int64(len(k.Store.Mem))},
-		&pbgs.State{Key: "cache_mem", Value: int64(unsafe.Sizeof(k.Store))},
+		&pbgs.State{Key: "cache_mem", Value: mem},
 	}
 }
 

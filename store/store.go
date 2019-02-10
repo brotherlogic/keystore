@@ -15,7 +15,7 @@ import (
 
 // Store is the basic store type
 type Store struct {
-	memMutex     *sync.Mutex
+	MemMutex     *sync.Mutex
 	Mem          map[string][]byte
 	Path         string
 	Meta         *pb.StoreMeta
@@ -35,7 +35,7 @@ func InitStore(p string) Store {
 		proto.Unmarshal(data, meta)
 	}
 
-	s := Store{Mem: make(map[string][]byte), Path: p, Meta: meta, memMutex: &sync.Mutex{}}
+	s := Store{Mem: make(map[string][]byte), Path: p, Meta: meta, MemMutex: &sync.Mutex{}}
 	return s
 }
 
@@ -94,9 +94,9 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 		return k.Meta.GetVersion(), nil
 	}
 
-	k.memMutex.Lock()
+	k.MemMutex.Lock()
 	k.Mem[adjustKey(key)] = bytes
-	k.memMutex.Unlock()
+	k.MemMutex.Unlock()
 
 	fullpath := k.Path + adjustKey(key)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
@@ -123,19 +123,19 @@ func (k *Store) localSave(key string, m proto.Message) error {
 
 //LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
-	k.memMutex.Lock()
+	k.MemMutex.Lock()
 	if val, ok := k.Mem[adjustKey(key)]; ok {
-		k.memMutex.Unlock()
+		k.MemMutex.Unlock()
 		return val, nil
 	}
-	k.memMutex.Unlock()
+	k.MemMutex.Unlock()
 
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 
 	if err != nil {
-		k.memMutex.Lock()
+		k.MemMutex.Lock()
 		k.Mem[key] = data
-		k.memMutex.Unlock()
+		k.MemMutex.Unlock()
 	}
 
 	return data, err
