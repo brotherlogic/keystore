@@ -1,7 +1,7 @@
 package store
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"testing"
 
@@ -20,6 +20,21 @@ func TestBasicSave(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Error in saving proto: %v", err)
+	}
+}
+
+func BenchmarkBasicSave(b *testing.B) {
+	tp := &pb.TestProto{Key: "Key", Value: "Value"}
+
+	s := InitTest(".testbasicsave", true)
+
+	for n := 0; n < b.N; n++ {
+		err := s.localSave("/test/path", tp)
+
+		if err != nil {
+			b.Errorf("Error in saving proto: %v", err)
+		}
+		tp.Value = fmt.Sprintf("Value %v", n)
 	}
 }
 
@@ -102,7 +117,6 @@ func TestReadOfMetaOnReload(t *testing.T) {
 		t.Fatalf("Error in doing save: %v", err)
 	}
 	c1 := s.Meta.Version
-	log.Printf("HERE %v", s.Meta)
 
 	s2 := InitTest(".testMetaOnReload", false)
 	c2 := s2.Meta.Version
@@ -160,7 +174,6 @@ func TestUpdatesWrittenVersion(t *testing.T) {
 
 //InitTest prepares a test instance
 func InitTest(path string, delete bool) *Store {
-	log.Printf("INITING %v", path)
 	if delete {
 		os.RemoveAll(path)
 	}
