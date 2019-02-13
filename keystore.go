@@ -9,6 +9,11 @@ import (
 	pb "github.com/brotherlogic/keystore/proto"
 )
 
+// Shutdown the server
+func (k *KeyStore) Shutdown(ctx context.Context) error {
+	return nil
+}
+
 //Mote promotes or demotes this server
 func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 
