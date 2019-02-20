@@ -149,7 +149,6 @@ func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry,
 
 func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
 	var result *pb.StoreMeta
-
 	conn, err := serverStatusGetter.dial(entry)
 	if err == nil {
 		defer conn.Close()
@@ -224,10 +223,10 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 //HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync() error {
 	conn, err := k.DialMaster("keystore")
-	defer conn.Close()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	client := pb.NewKeyStoreServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
