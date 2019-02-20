@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"strconv"
 	"time"
 
 	"github.com/brotherlogic/goserver"
@@ -67,16 +66,12 @@ type KeyStore struct {
 }
 
 type prodVersionWriter struct {
-	resolver func(string) (string, int32, error)
+	dial func(server string) (*grpc.ClientConn, error)
 }
 
 // This performs a fan out write
 func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
-	ip, port, err := serverVersionWriter.resolver("versionserver")
-	if err != nil {
-		return err
-	}
-	conn, err := grpc.Dial(ip+":"+strconv.Itoa(int(port)), grpc.WithInsecure())
+	conn, err := serverVersionWriter.dial("versionserver")
 	if err != nil {
 		return err
 	}
@@ -91,11 +86,7 @@ func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 }
 
 func (serverVersionWriter prodVersionWriter) read() (*pbvs.Version, error) {
-	ip, port, err := serverVersionWriter.resolver("versionserver")
-	if err != nil {
-		return nil, err
-	}
-	conn, err := grpc.Dial(ip+":"+strconv.Itoa(int(port)), grpc.WithInsecure())
+	conn, err := serverVersionWriter.dial("versionserver")
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +128,12 @@ func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
 	return servers
 }
 
-type prodServerStatusGetter struct{}
+type prodServerStatusGetter struct {
+	dial func(entry *pbd.RegistryEntry) (*grpc.ClientConn, error)
+}
 
 func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) error {
-	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
+	conn, err := serverStatusGetter.dial(entry)
 	if err == nil {
 		defer conn.Close()
 		client := pb.NewKeyStoreServiceClient(conn)
@@ -156,7 +149,7 @@ func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry,
 func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
 	var result *pb.StoreMeta
 
-	conn, err := grpc.Dial(entry.GetIp()+":"+strconv.Itoa(int(entry.GetPort())), grpc.WithInsecure())
+	conn, err := serverStatusGetter.dial(entry)
 	if err == nil {
 		defer conn.Close()
 		client := pb.NewKeyStoreServiceClient(conn)
@@ -207,8 +200,8 @@ func Init(p string) *KeyStore {
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &s}
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
-	ks.serverStatusGetter = &prodServerStatusGetter{}
-	ks.serverVersionWriter = &prodVersionWriter{resolver: utils.Resolve}
+	ks.serverStatusGetter = &prodServerStatusGetter{ks.DoDial}
+	ks.serverVersionWriter = &prodVersionWriter{ks.DialMaster}
 	return ks
 }
 
@@ -227,8 +220,7 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 
 //HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync() error {
-	host, port := k.GetIP("keystore")
-	conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure())
+	conn, err := k.DialMaster("keystore")
 	defer conn.Close()
 	if err != nil {
 		return err
