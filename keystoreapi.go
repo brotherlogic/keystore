@@ -224,10 +224,10 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 //HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync() error {
 	conn, err := k.DialMaster("keystore")
-	defer conn.Close()
 	if err != nil {
 		return err
 	}
+	defer conn.Close()
 
 	client := pb.NewKeyStoreServiceClient(conn)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
