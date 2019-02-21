@@ -62,7 +62,7 @@ func (k *Store) Save(req *pb.SaveRequest) error {
 	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
 	if write > 0 {
 		req.WriteVersion = k.Meta.Version
-		k.Updates = append(k.Updates, req)
+		//k.Updates = append(k.Updates, req)
 	}
 	return err
 }
