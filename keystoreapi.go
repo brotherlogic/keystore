@@ -164,7 +164,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	}
 	k.Store.MemMutex.Unlock()
 	return []*pbgs.State{
-		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
+		&pbgs.State{Key: "cores", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
@@ -268,7 +268,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	if req.GetWriteVersion() == 0 {
 		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
 		req.WriteVersion = v
-		go k.fanoutWrite(req)
+		//go k.fanoutWrite(req)
 	}
 
 	return &pb.Empty{}, nil
