@@ -164,7 +164,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	}
 	k.Store.MemMutex.Unlock()
 	return []*pbgs.State{
-		&pbgs.State{Key: "core", Value: k.Store.Meta.GetVersion()},
+		&pbgs.State{Key: "cores", Value: k.Store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
