@@ -229,26 +229,26 @@ func (k *KeyStore) HardSync() error {
 	defer conn.Close()
 
 	client := pb.NewKeyStoreServiceClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	meta, err := client.GetMeta(ctx, &pb.Empty{})
+	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel1()
+	meta, err := client.GetMeta(ctx1, &pb.Empty{})
 	if err != nil {
 		return err
 	}
 
 	// Pull the GetDirectory
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	dir, err := client.GetDirectory(ctx, &pb.GetDirectoryRequest{})
+	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second)
+	defer cancel2()
+	dir, err := client.GetDirectory(ctx2, &pb.GetDirectoryRequest{})
 	if err != nil {
 		return err
 	}
 
 	// Process and Store
 	for _, entry := range dir.GetKeys() {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Second*10)
-		defer cancel()
-		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
+		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Second*10)
+		defer cancel3()
+		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return err
 		}
