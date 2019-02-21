@@ -105,26 +105,10 @@ type prodServerGetter struct {
 }
 
 func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
-	servers := make([]*pbd.RegistryEntry, 0)
-
-	conn, err := grpc.Dial(utils.Discover, grpc.WithInsecure())
-	if err == nil {
-		defer conn.Close()
-		client := pbd.NewDiscoveryServiceClient(conn)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-
-		list, err := client.ListAllServices(ctx, &pbd.ListRequest{})
-		if err == nil {
-			for _, l := range list.GetServices().Services {
-				if l.GetName() == "keystore" && l.GetIdentifier() != serverGetter.server {
-					servers = append(servers, l)
-				}
-			}
-		}
+	servers, err := utils.ResolveAll("keystore")
+	if err != nil {
+		return make([]*pbd.RegistryEntry, 0)
 	}
-
 	return servers
 }
 
