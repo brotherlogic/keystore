@@ -19,7 +19,6 @@ type Store struct {
 	Mem          map[string][]byte
 	Path         string
 	Meta         *pb.StoreMeta
-	Updates      []*pb.SaveRequest
 	lastSnapshot int64
 }
 

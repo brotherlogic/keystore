@@ -70,7 +70,7 @@ type prodVersionWriter struct {
 }
 
 // This performs a fan out write
-func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
+func (serverVersionWriter *prodVersionWriter) write(v *pbvs.Version) error {
 	conn, err := serverVersionWriter.dial("versionserver")
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (serverVersionWriter prodVersionWriter) write(v *pbvs.Version) error {
 	return err
 }
 
-func (serverVersionWriter prodVersionWriter) read() (*pbvs.Version, error) {
+func (serverVersionWriter *prodVersionWriter) read() (*pbvs.Version, error) {
 	conn, err := serverVersionWriter.dial("versionserver")
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ type prodServerGetter struct {
 	server string
 }
 
-func (serverGetter prodServerGetter) getServers() []*pbd.RegistryEntry {
+func (serverGetter *prodServerGetter) getServers() []*pbd.RegistryEntry {
 	servers, err := utils.ResolveAll("keystore")
 	if err != nil {
 		return make([]*pbd.RegistryEntry, 0)
@@ -116,21 +116,22 @@ type prodServerStatusGetter struct {
 	dial func(entry *pbd.RegistryEntry) (*grpc.ClientConn, error)
 }
 
-func (serverStatusGetter prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) error {
+func (serverStatusGetter *prodServerStatusGetter) write(entry *pbd.RegistryEntry, req *pb.SaveRequest) error {
 	conn, err := serverStatusGetter.dial(entry)
-	if err == nil {
-		defer conn.Close()
-		client := pb.NewKeyStoreServiceClient(conn)
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
-		defer cancel()
-		_, err = client.Save(ctx, req)
+	if err != nil {
 		return err
 	}
+	defer conn.Close()
+
+	client := pb.NewKeyStoreServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*20)
+	defer cancel()
+
+	_, err = client.Save(ctx, req)
 	return err
 }
 
-func (serverStatusGetter prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
+func (serverStatusGetter *prodServerStatusGetter) getStatus(entry *pbd.RegistryEntry) *pb.StoreMeta {
 	var result *pb.StoreMeta
 
 	conn, err := serverStatusGetter.dial(entry)
