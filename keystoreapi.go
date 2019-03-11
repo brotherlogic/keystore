@@ -158,12 +158,6 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
-	mem := int64(0)
-	k.store.MemMutex.Lock()
-	for _, v := range k.store.Mem {
-		mem += int64(len(v))
-	}
-	k.store.MemMutex.Unlock()
 	return []*pbgs.State{
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
@@ -175,8 +169,6 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "terror", Text: k.transferError},
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
-		&pbgs.State{Key: "keys", Value: int64(len(k.store.Mem))},
-		&pbgs.State{Key: "cache_mem", Value: mem},
 	}
 }
 
