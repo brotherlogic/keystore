@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/golang/protobuf/proto"
 
@@ -15,8 +14,6 @@ import (
 
 // Store is the basic store type
 type Store struct {
-	MemMutex     *sync.Mutex
-	Mem          map[string][]byte
 	Path         string
 	Meta         *pb.StoreMeta
 	lastSnapshot int64
@@ -34,7 +31,9 @@ func InitStore(p string) Store {
 		proto.Unmarshal(data, meta)
 	}
 
-	s := Store{Mem: make(map[string][]byte), Path: p, Meta: meta, MemMutex: &sync.Mutex{}}
+	s := Store{
+		Path: p, Meta: meta,
+	}
 	return s
 }
 
@@ -93,10 +92,6 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 		return k.Meta.GetVersion(), nil
 	}
 
-	k.MemMutex.Lock()
-	k.Mem[adjustKey(key)] = bytes
-	k.MemMutex.Unlock()
-
 	fullpath := k.Path + adjustKey(key)
 	dir := fullpath[0:strings.LastIndex(fullpath, "/")]
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -122,21 +117,7 @@ func (k *Store) localSave(key string, m proto.Message) error {
 
 //LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
-	k.MemMutex.Lock()
-	if val, ok := k.Mem[adjustKey(key)]; ok {
-		k.MemMutex.Unlock()
-		return val, nil
-	}
-	k.MemMutex.Unlock()
-
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
-
-	if err != nil {
-		k.MemMutex.Lock()
-		k.Mem[key] = data
-		k.MemMutex.Unlock()
-	}
-
 	return data, err
 }
 func (k *Store) localRead(key string, faker proto.Message) (proto.Message, error) {
