@@ -25,8 +25,8 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 	for _, entry := range entries {
 		meta := k.serverStatusGetter.getStatus(entry)
 
-		if meta.GetVersion() > k.Meta.GetVersion() {
-			return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.Meta.GetVersion())
+		if meta.GetVersion() > k.store.Meta.GetVersion() {
+			return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.store.Meta.GetVersion())
 		}
 	}
 
@@ -35,8 +35,8 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 	if err != nil {
 		return fmt.Errorf("Unable to determine where we are: %v", err)
 	}
-	if k.Store.Meta.Version < vers.GetValue() {
-		return fmt.Errorf("We're behind version store: %v and %v", k.Store.Meta, vers)
+	if k.store.Meta.Version < vers.GetValue() {
+		return fmt.Errorf("We're behind version store: %v and %v", k.store.Meta, vers)
 	}
 
 	if master {
@@ -48,7 +48,7 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 
 // GetDirectory gets a directory listing
 func (k *KeyStore) GetDirectory(ctx context.Context, req *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
-	return &pb.GetDirectoryResponse{Keys: k.Store.GetStored()}, nil
+	return &pb.GetDirectoryResponse{Keys: k.store.GetStored()}, nil
 }
 
 func (k *KeyStore) resync() error {
@@ -68,12 +68,12 @@ func (k *KeyStore) resync() error {
 		if err != nil {
 			return err
 		}
-		_, err = k.LocalSaveBytes(key, data.GetPayload().GetValue())
+		_, err = k.store.LocalSaveBytes(key, data.GetPayload().GetValue())
 		if err != nil {
 			return err
 		}
 	}
 
-	k.Meta.Version = reg.GetVersion()
+	k.store.Meta.Version = reg.GetVersion()
 	return nil
 }

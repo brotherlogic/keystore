@@ -70,7 +70,6 @@ type testVersionWriter struct {
 
 func (serverVersionWriter *testVersionWriter) write(version *pbvs.Version) error {
 	serverVersionWriter.written = append(serverVersionWriter.written, version)
-	log.Printf("HERE = %v", serverVersionWriter)
 	return nil
 }
 
@@ -133,11 +132,22 @@ func TestWriteVersion(t *testing.T) {
 	}
 }
 
+func BenchmarkBasicSave(b *testing.B) {
+	s := InitTest(".testbasicbench")
+
+	emp, _ := proto.Marshal(&pb.Empty{})
+
+	for n := 0; n < b.N; n++ {
+		s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
 func TestMoteSuccess(t *testing.T) {
 	s := InitTest(".testMoteSuccess/")
 	s.serverGetter = &testServerGetter{}
 	s.serverStatusGetter = &testServerStatusGetter{}
-	s.Store.Meta.Version = 100
+	s.store.Meta.Version = 100
 
 	val := s.Mote(context.Background(), true)
 	if val != nil {
@@ -149,7 +159,7 @@ func TestMoteFail(t *testing.T) {
 	s := InitTest(".testMoteFail/")
 	s.serverGetter = &testServerGetter{}
 	s.serverStatusGetter = &testServerStatusGetter{}
-	s.Store.Meta.Version = 50
+	s.store.Meta.Version = 50
 
 	val := s.Mote(context.Background(), true)
 	if val == nil {
