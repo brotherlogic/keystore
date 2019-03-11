@@ -48,7 +48,7 @@ type serverVersionWriter interface {
 // KeyStore the main server
 type KeyStore struct {
 	*goserver.GoServer
-	*store.Store
+	store               *store.Store
 	serverGetter        serverGetter
 	serverStatusGetter  serverStatusGetter
 	serverVersionWriter serverVersionWriter
@@ -159,13 +159,13 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
 	mem := int64(0)
-	k.Store.MemMutex.Lock()
-	for _, v := range k.Store.Mem {
+	k.store.MemMutex.Lock()
+	for _, v := range k.store.Mem {
 		mem += int64(len(v))
 	}
-	k.Store.MemMutex.Unlock()
+	k.store.MemMutex.Unlock()
 	return []*pbgs.State{
-		&pbgs.State{Key: "cores", Value: k.Store.Meta.GetVersion()},
+		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
 		&pbgs.State{Key: "state", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
@@ -175,7 +175,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "terror", Text: k.transferError},
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
-		&pbgs.State{Key: "keys", Value: int64(len(k.Store.Mem))},
+		&pbgs.State{Key: "keys", Value: int64(len(k.store.Mem))},
 		&pbgs.State{Key: "cache_mem", Value: mem},
 	}
 }
@@ -183,7 +183,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 //Init a keystore
 func Init(p string) *KeyStore {
 	s := store.InitStore(p)
-	ks := &KeyStore{GoServer: &goserver.GoServer{}, Store: &s}
+	ks := &KeyStore{GoServer: &goserver.GoServer{}, store: &s}
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
 	ks.serverStatusGetter = &prodServerStatusGetter{ks.DoDial}
@@ -237,11 +237,11 @@ func (k *KeyStore) HardSync() error {
 		if err != nil {
 			return err
 		}
-		k.LocalSaveBytes(entry, data.GetPayload().GetValue())
+		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
 
 	//Update the meta
-	k.Meta.Version = meta.GetVersion()
+	k.store.Meta.Version = meta.GetVersion()
 
 	k.state = pb.State_SOFT_SYNC
 
@@ -256,14 +256,14 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.fanWrites++
 	}
 
-	if req.GetWriteVersion() > k.Store.Meta.GetVersion()+1 {
+	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
 		k.catchups++
 		k.state = pb.State_HARD_SYNC
 		go k.HardSync()
 		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
 	}
 
-	v, _ := k.LocalSaveBytes(req.Key, req.Value.Value)
+	v, _ := k.store.LocalSaveBytes(req.Key, req.Value.Value)
 
 	// Fanout the writes async
 	if req.GetWriteVersion() == 0 {
@@ -278,13 +278,13 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	t := time.Now()
-	data, _ := k.LocalReadBytes(req.Key)
+	data, _ := k.store.LocalReadBytes(req.Key)
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
 }
 
 //GetMeta gets the metadata
 func (k *KeyStore) GetMeta(ctx context.Context, req *pb.Empty) (*pb.StoreMeta, error) {
-	return k.Meta, nil
+	return k.store.Meta, nil
 }
 
 // ReportHealth alerts if we're not healthy
