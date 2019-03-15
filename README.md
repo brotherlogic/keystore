@@ -1,3 +1,2 @@
 # Keystore
-
-Mulit-homed File System
+Multi-homed File System
