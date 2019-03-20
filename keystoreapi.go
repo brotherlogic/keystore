@@ -160,7 +160,7 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
-		&pbgs.State{Key: "state", Value: int64(k.state)},
+		&pbgs.State{Key: "states", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
 		&pbgs.State{Key: "corew", Value: k.coreWrites},
