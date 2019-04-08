@@ -53,7 +53,7 @@ func getKeys(s *pbdi.RegistryEntry) []string {
 }
 
 func read(s *pbdi.RegistryEntry, key string) int {
-	conn, _ := grpc.Dial(s.GetIp()+":"+strconv.Itoa(int(s.GetPort())), grpc.WithInsecure())
+	conn, _ := grpc.Dial(s.GetIp()+":"+strconv.Itoa(int(s.GetPort())), grpc.WithInsecure(), grpc.WithMaxMsgSize(1024*1024*1024))
 	defer conn.Close()
 
 	registry := pb.NewKeyStoreServiceClient(conn)
@@ -62,7 +62,7 @@ func read(s *pbdi.RegistryEntry, key string) int {
 	rs, err := registry.Read(ctx, &pb.ReadRequest{Key: key})
 
 	if err != nil {
-		log.Fatalf("Error: %v", err)
+		log.Fatalf("Error (%v): %v", key, err)
 	}
 
 	val := 0
@@ -84,15 +84,17 @@ func main() {
 	fmt.Printf("Found main server %v from %v\n\n", mainServer, len(servers))
 
 	for _, key := range getKeys(mainServer) {
+		t := time.Now()
 		vm := read(mainServer, key)
-		fmt.Printf("Key: %v = %v\n", key, vm)
+		fmt.Printf("Key [%v]: %v = %v\n", time.Now().Sub(t), key, vm)
 		for _, s := range servers {
 			if !s.GetMaster() {
+				t = time.Now()
 				v := read(s, key)
 				if v != vm {
-					fmt.Printf(" Key:%v = %v [FAIL]\n", key, v)
+					fmt.Printf(" Key [%v]: %v = %v [FAIL]\n", time.Now().Sub(t), key, v)
 				} else {
-					fmt.Printf(" Key:%v = %v\n", key, v)
+					fmt.Printf(" Key [%v]: %v = %v\n", time.Now().Sub(t), key, v)
 				}
 			}
 		}
