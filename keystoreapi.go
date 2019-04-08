@@ -223,7 +223,7 @@ func (k *KeyStore) HardSync() error {
 
 	// Process and Store
 	for _, entry := range dir.GetKeys() {
-		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Second*10)
+		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel3()
 		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
