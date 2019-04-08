@@ -63,6 +63,7 @@ type KeyStore struct {
 	catchups            int64
 	reads               int64
 	fanouts             int64
+	longestHardSync     time.Duration
 }
 
 type prodVersionWriter struct {
@@ -169,6 +170,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "terror", Text: k.transferError},
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
+		&pbgs.State{Key: "longest_hard_sync", TimeDuration: k.longestHardSync.Nanoseconds()},
 	}
 }
 
@@ -197,8 +199,18 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	k.elapsed = time.Now().Sub(t).Nanoseconds() / 1000000
 }
 
+func (k *KeyStore) storeTime(t time.Time) {
+	duration := time.Now().Sub(t)
+	if duration > k.longestHardSync {
+		k.longestHardSync = duration
+	}
+}
+
 //HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync() error {
+	t := time.Now()
+	defer k.storeTime(t)
+
 	conn, err := k.DialMaster("keystore")
 	if err != nil {
 		return err
