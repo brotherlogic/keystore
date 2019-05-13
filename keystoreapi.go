@@ -240,9 +240,13 @@ func (k *KeyStore) HardSync() error {
 	for _, entry := range dir.GetKeys() {
 		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute*5)
 		defer cancel3()
+		t := time.Now()
 		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return fmt.Errorf("Failure on %v: %v", entry, err)
+		}
+		if time.Now().Sub(t) > time.Second*30 {
+			k.RaiseIssue(ctx3, "Long Read", fmt.Sprintf("It took %v to read %v", time.Now().Sub(t), entry), false)
 		}
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
