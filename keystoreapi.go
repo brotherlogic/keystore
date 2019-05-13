@@ -65,6 +65,8 @@ type KeyStore struct {
 	fanouts             int64
 	longestHardSync     time.Duration
 	lastSuccessfulWrite time.Time
+	longRead            time.Duration
+	longReadKey         string
 }
 
 type prodVersionWriter struct {
@@ -161,6 +163,8 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
+		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
+		&pbgs.State{Key: "long_read_key", Text: k.longReadKey},
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
 		&pbgs.State{Key: "states", Value: int64(k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
@@ -240,9 +244,14 @@ func (k *KeyStore) HardSync() error {
 	for _, entry := range dir.GetKeys() {
 		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute*5)
 		defer cancel3()
+		t := time.Now()
 		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return fmt.Errorf("Failure on %v: %v", entry, err)
+		}
+		if time.Now().Sub(t) > time.Second*30 {
+			k.longRead = time.Now().Sub(t)
+			k.longReadKey = fmt.Sprintf("%v", entry)
 		}
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
