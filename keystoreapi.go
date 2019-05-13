@@ -64,6 +64,7 @@ type KeyStore struct {
 	reads               int64
 	fanouts             int64
 	longestHardSync     time.Duration
+	lastSuccessfulWrite time.Time
 }
 
 type prodVersionWriter struct {
@@ -182,6 +183,7 @@ func Init(p string) *KeyStore {
 	ks.serverGetter = &prodServerGetter{}
 	ks.serverStatusGetter = &prodServerStatusGetter{ks.DoDial}
 	ks.serverVersionWriter = &prodVersionWriter{ks.DialMaster}
+	ks.lastSuccessfulWrite = time.Now()
 	return ks
 }
 
@@ -260,6 +262,10 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.fanWrites++
 	}
 
+	if time.Now().Sub(k.lastSuccessfulWrite) > time.Hour {
+		k.RaiseIssue(ctx, "Keystore behind", fmt.Sprintf("%v has been behind for an hour", k.Registry.Identifier), false)
+	}
+
 	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
 		k.catchups++
 		k.state = pb.State_HARD_SYNC
@@ -267,6 +273,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
 	}
 
+	k.lastSuccessfulWrite = time.Now()
 	v, _ := k.store.LocalSaveBytes(req.Key, req.Value.Value)
 
 	// Fanout the writes async
