@@ -66,7 +66,7 @@ func (k *KeyStore) resync() error {
 
 		data, err := k.masterGetter.Read(ctx, &pb.ReadRequest{Key: key})
 		if err != nil {
-			return err
+			return fmt.Errorf("Bad read %v -> %v", key, err)
 		}
 		_, err = k.store.LocalSaveBytes(key, data.GetPayload().GetValue())
 		if err != nil {
