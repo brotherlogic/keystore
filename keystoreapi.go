@@ -67,6 +67,7 @@ type KeyStore struct {
 	lastSuccessfulWrite time.Time
 	longRead            time.Duration
 	longReadKey         string
+	hardSyncs           int64
 }
 
 type prodVersionWriter struct {
@@ -163,6 +164,7 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
+		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
 		&pbgs.State{Key: "long_read_key", Text: k.longReadKey},
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
@@ -213,8 +215,14 @@ func (k *KeyStore) storeTime(t time.Time) {
 	}
 }
 
+func (k *KeyStore) reduce() {
+	k.hardSyncs--
+}
+
 //HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync() error {
+	k.hardSyncs++
+	defer k.reduce()
 	t := time.Now()
 	defer k.storeTime(t)
 
