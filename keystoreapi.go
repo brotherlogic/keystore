@@ -242,7 +242,7 @@ func (k *KeyStore) HardSync() error {
 		defer cancel3()
 		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
-			return err
+			return fmt.Errorf("Failure on %v: %v", entry, err)
 		}
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
