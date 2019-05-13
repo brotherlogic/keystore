@@ -172,6 +172,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "catchups", Value: k.catchups},
 		&pbgs.State{Key: "reads", Value: int64(k.reads)},
 		&pbgs.State{Key: "longest_hard_sync", TimeDuration: k.longestHardSync.Nanoseconds()},
+		&pbgs.State{Key: "last_write", TimeValue: k.lastSuccessfulWrite.Unix()},
 	}
 }
 
