@@ -8,17 +8,16 @@ import (
 	"log"
 	"time"
 
-	"github.com/brotherlogic/goserver"
-	"github.com/brotherlogic/keystore/store"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
-
 	pbd "github.com/brotherlogic/discovery/proto"
+	"github.com/brotherlogic/goserver"
 	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
 	pb "github.com/brotherlogic/keystore/proto"
+	"github.com/brotherlogic/keystore/store"
 	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 )
 
 const (
@@ -274,6 +273,10 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	if k.state == pb.State_HARD_SYNC {
+		return nil, fmt.Errorf("Can't save when hard syncing")
+	}
+
 	if req.GetWriteVersion() == 0 {
 		k.coreWrites++
 	} else {
