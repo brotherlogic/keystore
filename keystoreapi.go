@@ -216,6 +216,7 @@ func (k *KeyStore) storeTime(t time.Time) {
 
 func (k *KeyStore) reduce() {
 	k.hardSyncs--
+	k.state = pb.State_SOFT_SYNC
 }
 
 //HardSync does a hard sync with an available keystore
@@ -265,8 +266,6 @@ func (k *KeyStore) HardSync() error {
 
 	//Update the meta
 	k.store.Meta.Version = meta.GetVersion()
-
-	k.state = pb.State_SOFT_SYNC
 
 	return nil
 }
