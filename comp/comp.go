@@ -62,7 +62,8 @@ func read(s *pbdi.RegistryEntry, key string) int {
 	rs, err := registry.Read(ctx, &pb.ReadRequest{Key: key})
 
 	if err != nil {
-		log.Fatalf("Error (%v): %v", key, err)
+		log.Printf("%v -> %v", s.Identifier, err)
+		return 0
 	}
 
 	val := 0
