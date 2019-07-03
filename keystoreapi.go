@@ -167,7 +167,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
 		&pbgs.State{Key: "long_read_key", Text: k.longReadKey},
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
-		&pbgs.State{Key: "states", Value: int64(k.state)},
+		&pbgs.State{Key: "states", Text: fmt.Sprintf("%v", k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
 		&pbgs.State{Key: "elapsed", Value: k.elapsed},
 		&pbgs.State{Key: "corew", Value: k.coreWrites},
