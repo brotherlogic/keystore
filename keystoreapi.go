@@ -310,6 +310,11 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	t := time.Now()
 	data, _ := k.store.LocalReadBytes(req.Key)
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("Read is returning empty: %v", req.Key)
+	}
+
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
 }
 
