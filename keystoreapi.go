@@ -272,6 +272,10 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	if len(req.Value.Value) == 0 {
+		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
+		return &pb.Empty{}, fmt.Errorf("Empty Write")
+	}
 	if k.state == pb.State_HARD_SYNC {
 		return nil, fmt.Errorf("Can't save when hard syncing")
 	}
