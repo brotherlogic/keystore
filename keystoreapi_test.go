@@ -121,7 +121,7 @@ func TestWriteVersion(t *testing.T) {
 	s := InitTest(".testVersionWriter")
 	d := &testVersionWriter{written: make([]*pbvs.Version, 0)}
 	s.serverVersionWriter = d
-	emp, _ := proto.Marshal(&pb.Empty{})
+	emp, _ := proto.Marshal(&pb.SaveRequest{Key: "testing"})
 	s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
 
 	time.Sleep(time.Second)
@@ -170,7 +170,7 @@ func TestMoteFail(t *testing.T) {
 func TestGetDirectory(t *testing.T) {
 	s := InitTest(".testGetDirectory/")
 
-	emp, _ := proto.Marshal(&pb.Empty{})
+	emp, _ := proto.Marshal(&pb.SaveRequest{Key: "testing"})
 
 	s.Save(context.Background(), &pb.SaveRequest{Key: "/madeup/key/one", Value: &google_protobuf.Any{Value: emp}})
 	s.Save(context.Background(), &pb.SaveRequest{Key: "/madeup/key/two", Value: &google_protobuf.Any{Value: emp}})
