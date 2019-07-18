@@ -1,4 +1,4 @@
-package store
+package main
 
 import (
 	"fmt"
@@ -53,16 +53,6 @@ func match(a, b []byte) bool {
 	}
 
 	return true
-}
-
-//Save performs a local save
-func (k *Store) Save(req *pb.SaveRequest) error {
-	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
-	if write > 0 {
-		req.WriteVersion = k.Meta.Version
-		//k.Updates = append(k.Updates, req)
-	}
-	return err
 }
 
 // GetStored gets all the local keys

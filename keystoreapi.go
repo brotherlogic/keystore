@@ -13,7 +13,6 @@ import (
 	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
 	pb "github.com/brotherlogic/keystore/proto"
-	"github.com/brotherlogic/keystore/store"
 	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 	"golang.org/x/net/context"
@@ -47,7 +46,7 @@ type serverVersionWriter interface {
 // KeyStore the main server
 type KeyStore struct {
 	*goserver.GoServer
-	store               *store.Store
+	store               *Store
 	serverGetter        serverGetter
 	serverStatusGetter  serverStatusGetter
 	serverVersionWriter serverVersionWriter
@@ -183,7 +182,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 
 //Init a keystore
 func Init(p string) *KeyStore {
-	s := store.InitStore(p)
+	s := InitStore(p)
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, store: &s}
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
