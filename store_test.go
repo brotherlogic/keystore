@@ -1,7 +1,6 @@
-package store
+package main
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -11,7 +10,7 @@ import (
 func TestBasicSave(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
 
-	s := InitTest(".testbasicsave", true)
+	s := InitStoreTest(".testbasicsave", true)
 	err := s.localSave("/test/path", tp)
 
 	if err != nil {
@@ -19,25 +18,10 @@ func TestBasicSave(t *testing.T) {
 	}
 }
 
-func BenchmarkBasicSave(b *testing.B) {
-	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-
-	s := InitTest(".testbasicsave", true)
-
-	for n := 0; n < b.N; n++ {
-		err := s.localSave("/test/path", tp)
-
-		if err != nil {
-			b.Errorf("Error in saving proto: %v", err)
-		}
-		tp.Value = fmt.Sprintf("Value %v", n)
-	}
-}
-
 func TestEmptySave(t *testing.T) {
 	tp := &pb.TestProto{}
 
-	s := InitTest(".testemptysave", true)
+	s := InitStoreTest(".testemptysave", true)
 	err := s.localSave("/test/path", tp)
 
 	if err == nil {
@@ -47,7 +31,7 @@ func TestEmptySave(t *testing.T) {
 
 func TestIncrementOfMeta(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	s := InitTest(".testMetaIncrement", true)
+	s := InitStoreTest(".testMetaIncrement", true)
 	c1 := s.Meta.Version
 	err := s.localSave("/test/path", tp)
 	if err != nil {
@@ -61,7 +45,7 @@ func TestIncrementOfMeta(t *testing.T) {
 
 func TestIncrementOfMetaWithDiff(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	s := InitTest(".testMetaIncrement", true)
+	s := InitStoreTest(".testMetaIncrement", true)
 	err := s.localSave("/test/path", tp)
 	if err != nil {
 		t.Fatalf("Error in doing save: %v", err)
@@ -88,7 +72,7 @@ func TestMatchFailOnArrayDiff(t *testing.T) {
 
 func TestIncrementOfMetaWithNoDiff(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	s := InitTest(".testMetaIncrement", true)
+	s := InitStoreTest(".testMetaIncrement", true)
 	err := s.localSave("/test/path", tp)
 	if err != nil {
 		t.Fatalf("Error in doing save: %v", err)
@@ -107,14 +91,14 @@ func TestIncrementOfMetaWithNoDiff(t *testing.T) {
 
 func TestReadOfMetaOnReload(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	s := InitTest(".testMetaOnReload", true)
+	s := InitStoreTest(".testMetaOnReload", true)
 	err := s.localSave("/test/path", tp)
 	if err != nil {
 		t.Fatalf("Error in doing save: %v", err)
 	}
 	c1 := s.Meta.Version
 
-	s2 := InitTest(".testMetaOnReload", false)
+	s2 := InitStoreTest(".testMetaOnReload", false)
 	c2 := s2.Meta.Version
 	if c1 != c2 {
 		t.Errorf("Meta has not been read on reload: %v", s2.Meta)
@@ -124,7 +108,7 @@ func TestReadOfMetaOnReload(t *testing.T) {
 func TestBasicRead(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
 
-	s := InitTest(".testbasicread", true)
+	s := InitStoreTest(".testbasicread", true)
 	s.localSave("/test/path", tp)
 
 	m, _ := s.localRead("/test/path", &pb.TestProto{})
@@ -136,10 +120,10 @@ func TestBasicRead(t *testing.T) {
 
 func TestAcrossServers(t *testing.T) {
 	tp := &pb.TestProto{Key: "Key", Value: "Value"}
-	s := InitTest(".testacrossservers", true)
+	s := InitStoreTest(".testacrossservers", true)
 	s.localSave("/test/path", tp)
 
-	s2 := InitTest(".testacrossservers", false)
+	s2 := InitStoreTest(".testacrossservers", false)
 	m, err := s2.localRead("/test/path", &pb.TestProto{})
 
 	if err != nil {
@@ -152,8 +136,8 @@ func TestAcrossServers(t *testing.T) {
 	}
 }
 
-//InitTest prepares a test instance
-func InitTest(path string, delete bool) *Store {
+//InitStoreTest prepares a test instance
+func InitStoreTest(path string, delete bool) *Store {
 	if delete {
 		os.RemoveAll(path)
 	}

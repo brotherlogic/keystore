@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/brotherlogic/keystore/store"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
@@ -14,24 +13,22 @@ import (
 
 //GetTestClient gets a test client that saves to a local store
 func GetTestClient(path string) *Keystoreclient {
-	return &Keystoreclient{linker: &localLinker{s: store.InitStore(path)}, retries: 5, backoffTime: time.Millisecond * 5}
+	return &Keystoreclient{linker: &localLinker{store: make(map[string]*google_protobuf.Any)}, retries: 5, backoffTime: time.Millisecond * 5}
 }
 
 type localLinker struct {
-	s store.Store
+	store map[string]*google_protobuf.Any
 }
 
 //Save saves out a proto
 func (l *localLinker) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empty, error) {
-	_, err := l.s.LocalSaveBytes(req.Key, req.Value.Value)
-	return &pbd.Empty{}, err
+	l.store[req.Key] = req.Value
+	return &pbd.Empty{}, nil
 }
 
 //Read reads a proto
 func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadResponse, error) {
-	t := time.Now()
-	bytes, err := l.s.LocalReadBytes(req.Key)
-	return &pbd.ReadResponse{Payload: &google_protobuf.Any{Value: bytes}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, err
+	return &pbd.ReadResponse{Payload: l.store[req.Key]}, nil
 }
 
 type link interface {
