@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
-	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -21,7 +20,7 @@ const (
 	waitTimeBound = 10
 )
 
-type getIP func(servername string) (string, int)
+type getIP func(servername string) (*grpc.ClientConn, error)
 
 //Prodlinker Production ready linker
 type Prodlinker struct {
@@ -32,17 +31,13 @@ type Prodlinker struct {
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	err := errors.New("first pass fail")
 	for i := 0; i < retries; i++ {
-		ip, port := p.getter("keystore")
-		if port > 0 {
-			conn, err2 := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure())
-			err = err2
+		conn, err := p.getter("keystore")
 
-			if err == nil {
-				defer conn.Close()
+		if err == nil {
+			defer conn.Close()
 
-				store := pb.NewKeyStoreServiceClient(conn)
-				return store.Save(ctx, req, grpc.FailFast(false))
-			}
+			store := pb.NewKeyStoreServiceClient(conn)
+			return store.Save(ctx, req, grpc.FailFast(false))
 		}
 
 		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
@@ -53,18 +48,15 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 
 //Read reads out the thingy
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
-	ip, port := p.getter("keystore")
-	if port > 0 {
-		conn, err := grpc.Dial(ip+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")), grpc.WithMaxMsgSize(1024*1024*1024))
-		if err == nil {
-			defer conn.Close()
+	conn, err := p.getter("keystore")
+	if err == nil {
+		defer conn.Close()
 
-			store := pb.NewKeyStoreServiceClient(conn)
-			r, e := store.Read(ctx, req, grpc.FailFast(false), grpc.UseCompressor("gzip"))
-			return r, e
-		}
-		return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
+		store := pb.NewKeyStoreServiceClient(conn)
+		r, e := store.Read(ctx, req, grpc.FailFast(false), grpc.UseCompressor("gzip"))
+		return r, e
 	}
+	return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
 
 	return nil, fmt.Errorf("Unable to find keystore")
 }

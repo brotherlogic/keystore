@@ -13,44 +13,46 @@ import (
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/cardserver/card"
+	pbd "github.com/brotherlogic/discovery/proto"
 	pbk "github.com/brotherlogic/keystore/proto"
 
 	//Needed to pull in gzip encoding init
 	_ "google.golang.org/grpc/encoding/gzip"
 )
 
-func findServer(name string) (string, int) {
-	ip, port, _ := utils.Resolve(name)
-	return ip, int(port)
+func doDial(entry *pbd.RegistryEntry) (*grpc.ClientConn, error) {
+	return grpc.Dial(entry.Ip+":"+strconv.Itoa(int(entry.Port)), grpc.WithInsecure())
+}
+
+func dialMaster(server string) (*grpc.ClientConn, error) {
+	ip, port, err := utils.Resolve(server)
+	if err != nil {
+		return nil, err
+	}
+
+	return doDial(&pbd.RegistryEntry{Ip: ip, Port: port})
 }
 
 func main() {
-	client := keystoreclient.GetClient(findServer)
+	client := keystoreclient.GetClient(dialMaster)
 	if len(os.Args) == 1 {
 		client.Save(context.Background(), "/testingkeytryagain2", &pb.Card{Text: "Testing222"})
 
-		host, port := findServer("keystore")
-		if port > 0 {
-			conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure())
-			if err != nil {
-				log.Fatalf("Cannot dial master: %v", err)
-			}
-			defer conn.Close()
-
-			registry := pbk.NewKeyStoreServiceClient(conn)
-			res, err := registry.GetMeta(context.Background(), &pbk.Empty{}, grpc.FailFast(false))
-			if err != nil {
-				log.Fatalf("Error doing compare job: %v", err)
-			}
-			fmt.Printf("GOT %v", res)
+		conn, err := dialMaster("keystore")
+		if err != nil {
+			log.Fatalf("Cannot dial master: %v", err)
 		}
+		defer conn.Close()
+
+		registry := pbk.NewKeyStoreServiceClient(conn)
+		res, err := registry.GetMeta(context.Background(), &pbk.Empty{}, grpc.FailFast(false))
+		if err != nil {
+			log.Fatalf("Error doing compare job: %v", err)
+		}
+		fmt.Printf("GOT %v", res)
 	} else {
 		t := time.Now()
-		host, port := findServer("keystore")
-		if port <= 0 {
-			log.Fatalf("Error in locating keystore")
-		}
-		conn, err := grpc.Dial(host+":"+strconv.Itoa(port), grpc.WithInsecure(), grpc.WithMaxMsgSize(1024*1024*1024))
+		conn, err := dialMaster("keystore")
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
 		}
