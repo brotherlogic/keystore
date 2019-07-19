@@ -76,6 +76,12 @@ func adjustKey(key string) string {
 
 //LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
+	for _, k := range k.Meta.DeletedKeys {
+		if k == key {
+			return 0, fmt.Errorf("Can't write to deleted key")
+		}
+	}
+
 	//Don't write if the proto matches
 	data, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
@@ -96,22 +102,13 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	return k.Meta.Version, nil
 }
 
-func (k *Store) localSave(key string, m proto.Message) error {
-	data, _ := proto.Marshal(m)
-	if len(data) == 0 {
-		return fmt.Errorf("Cannot save empty proto")
-	}
-	_, err := k.LocalSaveBytes(key, data)
-	return err
-}
-
 //LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
+	for _, k := range k.Meta.DeletedKeys {
+		if k == key {
+			return []byte{}, fmt.Errorf("Cannot read deleted key")
+		}
+	}
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 	return data, err
-}
-func (k *Store) localRead(key string, faker proto.Message) (proto.Message, error) {
-	d, _ := k.LocalReadBytes(key)
-	proto.Unmarshal(d, faker)
-	return faker, nil
 }
