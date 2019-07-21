@@ -263,8 +263,8 @@ func (k *KeyStore) HardSync() error {
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
 
-	//Update the meta
-	k.store.Meta.Version = meta.GetVersion()
+	//Update the meta, including deletes
+	k.store.Meta = meta
 
 	return nil
 }
@@ -283,6 +283,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.coreWrites++
 	} else {
 		k.fanWrites++
+		k.store.Meta.DeletedKeys = req.GetMeta().DeletedKeys
 	}
 
 	if time.Now().Sub(k.lastSuccessfulWrite) > time.Hour {
@@ -302,7 +303,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	// Fanout the writes async
 	if req.GetWriteVersion() == 0 {
 		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
-		req.WriteVersion = v
+		req.Meta = &pb.StoreMeta{Version: v, DeletedKeys: k.store.Meta.DeletedKeys}
 		go k.fanoutWrite(req)
 	}
 
@@ -319,6 +320,13 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	}
 
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
+}
+
+//Delete removes a key
+func (k *KeyStore) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	k.store.Meta.Version++
+	k.store.Meta.DeletedKeys = append(k.store.Meta.DeletedKeys, req.Key)
+	return &pb.DeleteResponse{}, nil
 }
 
 //GetMeta gets the metadata
