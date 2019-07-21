@@ -6,10 +6,15 @@ import "github.com/golang/protobuf/ptypes/any/any.proto";
 
 message Empty {}
 
+message DeleteObject{
+  int64 deletes = 1;
+}
+
 message SaveRequest {
   string key = 1;
   google.protobuf.Any value = 2;
   int64 write_version = 3;
+  StoreMeta meta = 4;
 }
 
 message ReadRequest {
@@ -41,9 +46,16 @@ enum State {
   MASTER = 2;
 }
 
+message DeleteRequest {
+  string key = 1;
+}
+
+message DeleteResponse {}
+
 service KeyStoreService {
   rpc Save (SaveRequest) returns (Empty) {};
   rpc Read (ReadRequest) returns (ReadResponse) {};
   rpc GetMeta (Empty) returns (StoreMeta) {};
   rpc GetDirectory(GetDirectoryRequest) returns (GetDirectoryResponse) {};
+  rpc Delete (DeleteRequest) returns (DeleteResponse) {};
 }
