@@ -8,15 +8,16 @@ import (
 	"log"
 	"time"
 
-	pbd "github.com/brotherlogic/discovery/proto"
 	"github.com/brotherlogic/goserver"
-	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+
+	pbd "github.com/brotherlogic/discovery/proto"
+	pbgs "github.com/brotherlogic/goserver/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
-	"golang.org/x/net/context"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -196,11 +197,13 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
 	t := time.Now()
 	for _, server := range servers {
-		k.fanouts++
-		err := k.serverStatusGetter.write(server, req)
-		if err != nil {
-			k.transferError = fmt.Sprintf("%v", err)
-			k.transferFailCount++
+		if server.Identifier != k.Registry.Identifier {
+			k.fanouts++
+			err := k.serverStatusGetter.write(server, req)
+			if err != nil {
+				k.transferError = fmt.Sprintf("%v", err)
+				k.transferFailCount++
+			}
 		}
 	}
 	k.elapsed = time.Now().Sub(t).Nanoseconds() / 1000000
@@ -271,6 +274,7 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	log.Printf("SAVE (%v) -> %v", k.Registry.Identifier, req)
 	if len(req.Value.Value) == 0 {
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
 		return &pb.Empty{}, fmt.Errorf("Empty Write")
