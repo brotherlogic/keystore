@@ -274,7 +274,6 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	log.Printf("SAVE (%v) -> %v", k.Registry.Identifier, req)
 	if len(req.Value.Value) == 0 {
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
 		return &pb.Empty{}, fmt.Errorf("Empty Write")
