@@ -365,5 +365,5 @@ func main() {
 	server.RegisterServer("keystore", false)
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
-	server.Serve()
+	fmt.Sprintf("%v", server.Serve())
 }
