@@ -284,7 +284,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	} else {
 		k.fanWrites++
 		if req.GetMeta() == nil {
-			k.RaiseIssue(ctx, "Bad fan write", fmt.Sprintf("Bad fanout request: %v", req))
+			k.RaiseIssue(ctx, "Bad fan write", fmt.Sprintf("Bad fanout request: %v", req), false)
 			return nil, fmt.Errorf("Bad request")
 		}
 		k.store.Meta.DeletedKeys = req.GetMeta().DeletedKeys
