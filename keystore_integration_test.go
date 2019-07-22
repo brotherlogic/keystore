@@ -88,6 +88,7 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 	os.RemoveAll(".inttest")
 
 	master := Init(".inttest/master/")
+	master.SkipLog = true
 	master.GoServer.Registry = &pbd.RegistryEntry{Identifier: "iammaster"}
 	svw := &integrationVersionWriter{}
 	master.serverVersionWriter = svw
@@ -103,8 +104,11 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 	followers := []*KeyStore{}
 	for i := 1; i <= numFollowers; i++ {
 		follower := Init(fmt.Sprintf(".inttest/follower%v/", i))
+		follower.SkipLog = true
 		follower.GoServer.Registry = &pbd.RegistryEntry{Identifier: fmt.Sprintf("iamfollower%v", i)}
 		follower.serverStatusGetter = statusGetter
+		follower.serverVersionWriter = svw
+		follower.serverGetter = sg
 		followers = append(followers, follower)
 	}
 	setup.followers = followers
@@ -159,7 +163,7 @@ func TestBasicWrite(t *testing.T) {
 	}
 
 	//Wait for the tasks to complete
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 5)
 
 	//Master should reflect write
 	meta, err = testSetup.master.GetMeta(context.Background(), &pb.Empty{})
