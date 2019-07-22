@@ -314,6 +314,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
 		req.Meta = &pb.StoreMeta{Version: v, DeletedKeys: k.store.Meta.DeletedKeys}
 		req.Origin = k.Registry.Identifier
+		req.WriteVersion = v
 		go k.fanoutWrite(req)
 	}
 
