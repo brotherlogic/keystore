@@ -114,7 +114,7 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 }
 
 func TestBasicWrite(t *testing.T) {
-	testSetup := InitIntegrationTest(1)
+	testSetup := InitIntegrationTest(2)
 
 	data, _ := proto.Marshal(&pb.DeleteObject{Deletes: 5})
 	_, err := testSetup.master.Save(context.Background(), &pb.SaveRequest{
@@ -138,11 +138,47 @@ func TestBasicWrite(t *testing.T) {
 	}
 
 	//Follower should reflect write
-	meta, err = testSetup.followers[0].GetMeta(context.Background(), &pb.Empty{})
+	for i := 0; i < 2; i++ {
+		meta, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
+		if err != nil {
+			t.Fatalf("Read of follower meta failed: %v", err)
+		}
+		if meta.Version != 1 {
+			t.Errorf("Follower Meta has returned wrong: %v", meta)
+		}
+	}
+
+	// Follow up write
+	data, _ = proto.Marshal(&pb.DeleteObject{Deletes: 20})
+	_, err = testSetup.master.Save(context.Background(), &pb.SaveRequest{
+		Key:   "test",
+		Value: &google_protobuf.Any{Value: data}})
+
 	if err != nil {
-		t.Fatalf("Read of follower meta failed: %v", err)
+		t.Fatalf("Write failed: %v", err)
 	}
-	if meta.Version != 1 {
-		t.Errorf("Follower Meta has returned wrong: %v", meta)
+
+	//Wait for the tasks to complete
+	time.Sleep(time.Second)
+
+	//Master should reflect write
+	meta, err = testSetup.master.GetMeta(context.Background(), &pb.Empty{})
+	if err != nil {
+		t.Fatalf("Read of meta failed: %v", err)
 	}
+	if meta.Version != 2 {
+		t.Errorf("Meta has returned wrong: %v", meta)
+	}
+
+	//Follower should reflect write
+	for i := 0; i < 2; i++ {
+		meta, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
+		if err != nil {
+			t.Fatalf("Read of follower meta failed: %v", err)
+		}
+		if meta.Version != 2 {
+			t.Errorf("Follower Meta has returned wrong: %v", meta)
+		}
+	}
+
 }
