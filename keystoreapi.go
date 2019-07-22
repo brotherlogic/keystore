@@ -265,7 +265,6 @@ func (k *KeyStore) HardSync() error {
 		}
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
-
 	//Update the meta, including deletes
 	k.store.Meta = meta
 
@@ -278,6 +277,9 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
 		return &pb.Empty{}, fmt.Errorf("Empty Write")
 	}
+
+	k.Log(fmt.Sprintf("Saving on %v (with origin %v)", k.Registry.Identifier, req.Origin))
+
 	if k.state == pb.State_HARD_SYNC {
 		return nil, fmt.Errorf("Can't save when hard syncing")
 	}
@@ -311,6 +313,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	if req.GetWriteVersion() == 0 {
 		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
 		req.Meta = &pb.StoreMeta{Version: v, DeletedKeys: k.store.Meta.DeletedKeys}
+		req.Origin = k.Registry.Identifier
 		go k.fanoutWrite(req)
 	}
 
