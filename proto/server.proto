@@ -15,6 +15,7 @@ message SaveRequest {
   google.protobuf.Any value = 2;
   int64 write_version = 3;
   StoreMeta meta = 4;
+  string origin = 5;
 }
 
 message ReadRequest {
