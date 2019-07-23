@@ -173,6 +173,9 @@ func TestBasicWrite(t *testing.T) {
 	if meta.Version != 2 {
 		t.Errorf("Meta has returned wrong: %v", meta)
 	}
+	if testSetup.master.saveRequests != 2 {
+		t.Errorf("Wrong number of save requests")
+	}
 
 	//Follower should reflect write
 	for i := 0; i < 2; i++ {
@@ -182,6 +185,10 @@ func TestBasicWrite(t *testing.T) {
 		}
 		if meta.Version != 2 {
 			t.Errorf("Follower Meta has returned wrong: %v", meta)
+		}
+
+		if testSetup.followers[i].saveRequests != 2 {
+			t.Errorf("Wrong number of save requests")
 		}
 	}
 
