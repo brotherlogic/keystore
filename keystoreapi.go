@@ -67,6 +67,7 @@ type KeyStore struct {
 	longRead            time.Duration
 	longReadKey         string
 	hardSyncs           int64
+	saveRequests        int64
 }
 
 type prodVersionWriter struct {
@@ -273,6 +274,7 @@ func (k *KeyStore) HardSync() error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	k.saveRequests++
 	if len(req.Value.Value) == 0 {
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
 		return &pb.Empty{}, fmt.Errorf("Empty Write")
@@ -324,7 +326,11 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	t := time.Now()
-	data, _ := k.store.LocalReadBytes(req.Key)
+	data, err := k.store.LocalReadBytes(req.Key)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if len(data) == 0 {
 		return nil, fmt.Errorf("Read is returning empty: %v", req.Key)

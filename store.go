@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/brotherlogic/keystore/proto"
 )
@@ -106,7 +108,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
 	for _, k := range k.Meta.DeletedKeys {
 		if k == key {
-			return []byte{}, fmt.Errorf("Cannot read deleted key")
+			return []byte{}, status.Error(codes.OutOfRange, "Cannot read deleted key")
 		}
 	}
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
