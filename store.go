@@ -62,7 +62,16 @@ func (k *Store) GetStored() []string {
 	files := make([]string, 0)
 	filepath.Walk(k.Path, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && info.Name() != "root.meta" {
-			files = append(files, path[len(k.Path):])
+			key := path[len(k.Path):]
+			deleted := false
+			for _, dKey := range k.Meta.DeletedKeys {
+				if dKey == key {
+					deleted = true
+				}
+			}
+			if !deleted {
+				files = append(files, key)
+			}
 		}
 		return nil
 	})

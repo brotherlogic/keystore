@@ -80,4 +80,32 @@ func TestDeleteKey(t *testing.T) {
 	if err == nil {
 		t.Errorf("Loaded deleted key")
 	}
+
+	keys := s.GetStored()
+	if len(keys) != 0 {
+		t.Errorf("Deleted key is being listed")
+	}
+
+}
+
+func TestListDeletedKey(t *testing.T) {
+	s := InitStoreTest(".test_load", true)
+	savestring := []byte("blah")
+	_, err := s.LocalSaveBytes("/key", savestring)
+	if err != nil {
+		t.Errorf("Saved deleted key")
+	}
+
+	_, err = s.LocalReadBytes("/key")
+	if err != nil {
+		t.Errorf("Loaded deleted key")
+	}
+
+	s.Meta.DeletedKeys = append(s.Meta.DeletedKeys, "/key")
+
+	keys := s.GetStored()
+	if len(keys) != 0 {
+		t.Errorf("Deleted key is being listed")
+	}
+
 }
