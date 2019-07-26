@@ -51,7 +51,6 @@ func main() {
 		}
 		fmt.Printf("GOT %v", res)
 	} else {
-		t := time.Now()
 		conn, err := dialMaster("keystore")
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
@@ -62,11 +61,12 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		res, err := registry.Read(ctx, &pbk.ReadRequest{Key: os.Args[1]})
+		res, err := registry.Delete(ctx, &pbk.DeleteRequest{Key: os.Args[1]})
+		//res, err := registry.Read(ctx, &pbk.ReadRequest{Key: os.Args[1]})
 		if err != nil {
 			log.Fatalf("Error on read: %v", err)
 		}
 
-		fmt.Printf("Read %v -> %v in %v (%v)", os.Args[1], len(res.GetPayload().Value), time.Now().Sub(t), res.GetReadTime())
+		fmt.Printf("%v -> %v", res, err)
 	}
 }

@@ -224,7 +224,7 @@ func (k *KeyStore) reduce() {
 }
 
 //HardSync does a hard sync with an available keystore
-func (k *KeyStore) HardSync() error {
+func (k *KeyStore) HardSync(ctx context.Context) error {
 	k.hardSyncs++
 	defer k.reduce()
 	t := time.Now()
@@ -237,27 +237,21 @@ func (k *KeyStore) HardSync() error {
 	defer conn.Close()
 
 	client := pb.NewKeyStoreServiceClient(conn)
-	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel1()
-	meta, err := client.GetMeta(ctx1, &pb.Empty{})
+	meta, err := client.GetMeta(ctx, &pb.Empty{})
 	if err != nil {
 		return err
 	}
 
 	// Pull the GetDirectory
-	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel2()
-	dir, err := client.GetDirectory(ctx2, &pb.GetDirectoryRequest{})
+	dir, err := client.GetDirectory(ctx, &pb.GetDirectoryRequest{})
 	if err != nil {
 		return err
 	}
 
 	// Process and Store
 	for _, entry := range dir.GetKeys() {
-		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute*5)
-		defer cancel3()
 		t := time.Now()
-		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
+		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return fmt.Errorf("Failure on %v: %v", entry, err)
 		}
@@ -305,7 +299,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
 		k.catchups++
 		k.state = pb.State_HARD_SYNC
-		go k.HardSync()
+		k.RunBackgroundTask(k.HardSync, "hard_sync")
 		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
 	}
 
