@@ -275,8 +275,6 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		return &pb.Empty{}, fmt.Errorf("Empty Write")
 	}
 
-	k.Log(fmt.Sprintf("Saving on %v (with origin %v) VERSION %v vs %v", k.Registry.Identifier, req.Origin, req.GetWriteVersion(), k.store.Meta.GetVersion()))
-
 	if k.state == pb.State_HARD_SYNC {
 		return nil, fmt.Errorf("Can't save when hard syncing")
 	}
