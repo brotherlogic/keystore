@@ -8,16 +8,16 @@ import (
 	"log"
 	"time"
 
-	pbd "github.com/brotherlogic/discovery/proto"
 	"github.com/brotherlogic/goserver"
-	pbgs "github.com/brotherlogic/goserver/proto"
 	"github.com/brotherlogic/goserver/utils"
-	pb "github.com/brotherlogic/keystore/proto"
-	"github.com/brotherlogic/keystore/store"
-	pbvs "github.com/brotherlogic/versionserver/proto"
-	google_protobuf "github.com/golang/protobuf/ptypes/any"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	pbd "github.com/brotherlogic/discovery/proto"
+	pbgs "github.com/brotherlogic/goserver/proto"
+	pb "github.com/brotherlogic/keystore/proto"
+	pbvs "github.com/brotherlogic/versionserver/proto"
+	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
 const (
@@ -47,7 +47,7 @@ type serverVersionWriter interface {
 // KeyStore the main server
 type KeyStore struct {
 	*goserver.GoServer
-	store               *store.Store
+	store               *Store
 	serverGetter        serverGetter
 	serverStatusGetter  serverStatusGetter
 	serverVersionWriter serverVersionWriter
@@ -67,6 +67,7 @@ type KeyStore struct {
 	longRead            time.Duration
 	longReadKey         string
 	hardSyncs           int64
+	saveRequests        int64
 }
 
 type prodVersionWriter struct {
@@ -163,6 +164,8 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
+		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
+		&pbgs.State{Key: "deletes", Text: fmt.Sprintf("%v", k.store.Meta.DeletedKeys)},
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
 		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "long_read_key", Text: k.longReadKey},
@@ -183,7 +186,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 
 //Init a keystore
 func Init(p string) *KeyStore {
-	s := store.InitStore(p)
+	s := InitStore(p)
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, store: &s}
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
@@ -197,11 +200,13 @@ func (k *KeyStore) fanoutWrite(req *pb.SaveRequest) {
 	servers := k.serverGetter.getServers()
 	t := time.Now()
 	for _, server := range servers {
-		k.fanouts++
-		err := k.serverStatusGetter.write(server, req)
-		if err != nil {
-			k.transferError = fmt.Sprintf("%v", err)
-			k.transferFailCount++
+		if server.Identifier != k.Registry.Identifier {
+			k.fanouts++
+			err := k.serverStatusGetter.write(server, req)
+			if err != nil {
+				k.transferError = fmt.Sprintf("%v", err)
+				k.transferFailCount++
+			}
 		}
 	}
 	k.elapsed = time.Now().Sub(t).Nanoseconds() / 1000000
@@ -220,7 +225,7 @@ func (k *KeyStore) reduce() {
 }
 
 //HardSync does a hard sync with an available keystore
-func (k *KeyStore) HardSync() error {
+func (k *KeyStore) HardSync(ctx context.Context) error {
 	k.hardSyncs++
 	defer k.reduce()
 	t := time.Now()
@@ -233,27 +238,21 @@ func (k *KeyStore) HardSync() error {
 	defer conn.Close()
 
 	client := pb.NewKeyStoreServiceClient(conn)
-	ctx1, cancel1 := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel1()
-	meta, err := client.GetMeta(ctx1, &pb.Empty{})
+	meta, err := client.GetMeta(ctx, &pb.Empty{})
 	if err != nil {
 		return err
 	}
 
 	// Pull the GetDirectory
-	ctx2, cancel2 := context.WithTimeout(context.Background(), time.Second*30)
-	defer cancel2()
-	dir, err := client.GetDirectory(ctx2, &pb.GetDirectoryRequest{})
+	dir, err := client.GetDirectory(ctx, &pb.GetDirectoryRequest{})
 	if err != nil {
 		return err
 	}
 
 	// Process and Store
 	for _, entry := range dir.GetKeys() {
-		ctx3, cancel3 := context.WithTimeout(context.Background(), time.Minute*5)
-		defer cancel3()
 		t := time.Now()
-		data, err := client.Read(ctx3, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
+		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return fmt.Errorf("Failure on %v: %v", entry, err)
 		}
@@ -263,15 +262,20 @@ func (k *KeyStore) HardSync() error {
 		}
 		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
 	}
-
-	//Update the meta
-	k.store.Meta.Version = meta.GetVersion()
+	//Update the meta, including deletes
+	k.store.Meta = meta
 
 	return nil
 }
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	k.saveRequests++
+	if len(req.Value.Value) == 0 {
+		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
+		return &pb.Empty{}, fmt.Errorf("Empty Write")
+	}
+
 	if k.state == pb.State_HARD_SYNC {
 		return nil, fmt.Errorf("Can't save when hard syncing")
 	}
@@ -280,6 +284,11 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.coreWrites++
 	} else {
 		k.fanWrites++
+		if req.GetMeta() == nil {
+			k.RaiseIssue(ctx, "Bad fan write", fmt.Sprintf("Bad fanout request: %v", req), false)
+			return nil, fmt.Errorf("Bad request")
+		}
+		k.store.Meta.DeletedKeys = req.GetMeta().DeletedKeys
 	}
 
 	if time.Now().Sub(k.lastSuccessfulWrite) > time.Hour {
@@ -289,7 +298,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
 		k.catchups++
 		k.state = pb.State_HARD_SYNC
-		go k.HardSync()
+		k.RunBackgroundTask(k.HardSync, "hard_sync")
 		return &pb.Empty{}, errors.New("Unable to apply the write, going into HARD_SYNC mode")
 	}
 
@@ -299,6 +308,8 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	// Fanout the writes async
 	if req.GetWriteVersion() == 0 {
 		go k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
+		req.Meta = &pb.StoreMeta{Version: v, DeletedKeys: k.store.Meta.DeletedKeys}
+		req.Origin = k.Registry.Identifier
 		req.WriteVersion = v
 		go k.fanoutWrite(req)
 	}
@@ -309,13 +320,24 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	t := time.Now()
-	data, _ := k.store.LocalReadBytes(req.Key)
+	data, err := k.store.LocalReadBytes(req.Key)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if len(data) == 0 {
 		return nil, fmt.Errorf("Read is returning empty: %v", req.Key)
 	}
 
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
+}
+
+//Delete removes a key
+func (k *KeyStore) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	k.store.Meta.Version++
+	k.store.Meta.DeletedKeys = append(k.store.Meta.DeletedKeys, req.Key)
+	return &pb.DeleteResponse{}, nil
 }
 
 //GetMeta gets the metadata
@@ -347,5 +369,5 @@ func main() {
 	server.RegisterServer("keystore", false)
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
-	server.Serve()
+	fmt.Sprintf("%v", server.Serve())
 }

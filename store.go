@@ -1,4 +1,4 @@
-package store
+package main
 
 import (
 	"fmt"
@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/brotherlogic/keystore/proto"
 )
@@ -55,22 +57,21 @@ func match(a, b []byte) bool {
 	return true
 }
 
-//Save performs a local save
-func (k *Store) Save(req *pb.SaveRequest) error {
-	write, err := k.LocalSaveBytes(adjustKey(req.Key), req.Value.Value)
-	if write > 0 {
-		req.WriteVersion = k.Meta.Version
-		//k.Updates = append(k.Updates, req)
-	}
-	return err
-}
-
 // GetStored gets all the local keys
 func (k *Store) GetStored() []string {
 	files := make([]string, 0)
 	filepath.Walk(k.Path, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && info.Name() != "root.meta" {
-			files = append(files, path[len(k.Path):])
+			key := path[len(k.Path):]
+			deleted := false
+			for _, dKey := range k.Meta.DeletedKeys {
+				if dKey == key {
+					deleted = true
+				}
+			}
+			if !deleted {
+				files = append(files, key)
+			}
 		}
 		return nil
 	})
@@ -86,6 +87,12 @@ func adjustKey(key string) string {
 
 //LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
+	for _, k := range k.Meta.DeletedKeys {
+		if k == key {
+			return 0, fmt.Errorf("Can't write to deleted key")
+		}
+	}
+
 	//Don't write if the proto matches
 	data, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
@@ -106,22 +113,13 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	return k.Meta.Version, nil
 }
 
-func (k *Store) localSave(key string, m proto.Message) error {
-	data, _ := proto.Marshal(m)
-	if len(data) == 0 {
-		return fmt.Errorf("Cannot save empty proto")
-	}
-	_, err := k.LocalSaveBytes(key, data)
-	return err
-}
-
 //LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string) ([]byte, error) {
+	for _, k := range k.Meta.DeletedKeys {
+		if k == key {
+			return []byte{}, status.Error(codes.OutOfRange, "Cannot read deleted key")
+		}
+	}
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
 	return data, err
-}
-func (k *Store) localRead(key string, faker proto.Message) (proto.Message, error) {
-	d, _ := k.LocalReadBytes(key)
-	proto.Unmarshal(d, faker)
-	return faker, nil
 }
