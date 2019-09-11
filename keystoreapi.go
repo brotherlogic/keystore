@@ -164,8 +164,8 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
 	return []*pbgs.State{
-		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "deletes", Text: fmt.Sprintf("%v", k.store.Meta.DeletedKeys)},
+		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
 		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "long_read_key", Text: k.longReadKey},
