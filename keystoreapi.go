@@ -17,6 +17,7 @@ import (
 	pbgs "github.com/brotherlogic/goserver/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
+	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
@@ -270,6 +271,11 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
+	// Prevent large saves
+	if proto.Size(req.Value) > 1024*1024 {
+		k.RaiseIssue(ctx, "Large Write", fmt.Sprintf("Attempting to write a large proto for %v", req.GetKey()), false)
+	}
+
 	k.saveRequests++
 	if len(req.Value.Value) == 0 {
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
