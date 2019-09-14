@@ -173,7 +173,6 @@ func (k *KeyStore) GetState() []*pbgs.State {
 		&pbgs.State{Key: "cores", Value: k.store.Meta.GetVersion()},
 		&pbgs.State{Key: "states", Text: fmt.Sprintf("%v", k.state)},
 		&pbgs.State{Key: "tfail", Value: k.transferFailCount},
-		&pbgs.State{Key: "elapsed", Value: k.elapsed},
 		&pbgs.State{Key: "corew", Value: k.coreWrites},
 		&pbgs.State{Key: "fanw", Value: k.fanWrites},
 		&pbgs.State{Key: "fans", Value: k.fanouts},
