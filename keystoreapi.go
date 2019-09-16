@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/brotherlogic/goserver"
@@ -69,6 +70,8 @@ type KeyStore struct {
 	longReadKey         string
 	hardSyncs           int64
 	saveRequests        int64
+	readCounts          map[string]int
+	readCountsMutex     *sync.Mutex
 }
 
 type prodVersionWriter struct {
@@ -164,7 +167,19 @@ func (k *KeyStore) DoRegister(server *grpc.Server) {
 
 // GetState gets the state of the server
 func (k *KeyStore) GetState() []*pbgs.State {
+	hc := 0
+	hcs := ""
+	k.readCountsMutex.Lock()
+	for key, count := range k.readCounts {
+		if count > hc {
+			hc = count
+			hcs = key
+		}
+	}
+	k.readCountsMutex.Unlock()
+
 	return []*pbgs.State{
+		&pbgs.State{Key: "high_key", Text: fmt.Sprintf("%v (%v)", hcs, hc)},
 		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "deletes", Text: fmt.Sprintf("%v", k.store.Meta.DeletedKeys)},
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
@@ -193,6 +208,8 @@ func Init(p string) *KeyStore {
 	ks.serverStatusGetter = &prodServerStatusGetter{ks.DoDial}
 	ks.serverVersionWriter = &prodVersionWriter{ks.DialMaster}
 	ks.lastSuccessfulWrite = time.Now()
+	ks.readCounts = make(map[string]int)
+	ks.readCountsMutex = &sync.Mutex{}
 	return ks
 }
 
@@ -324,6 +341,10 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 
 // Read reads a proto
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
+	k.readCountsMutex.Lock()
+	k.readCounts[req.Key]++
+	k.readCountsMutex.Unlock()
+
 	t := time.Now()
 	data, err := k.store.LocalReadBytes(req.Key)
 
