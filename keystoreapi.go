@@ -179,8 +179,8 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	k.readCountsMutex.Unlock()
 
 	return []*pbgs.State{
-		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "high_key", Text: fmt.Sprintf("%v (%v)", hcs, hc)},
+		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
 		&pbgs.State{Key: "deletes", Text: fmt.Sprintf("%v", k.store.Meta.DeletedKeys)},
 		&pbgs.State{Key: "long_read", TimeDuration: k.longRead.Nanoseconds()},
 		&pbgs.State{Key: "hard_syncs", Value: k.hardSyncs},
