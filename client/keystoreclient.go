@@ -2,6 +2,7 @@ package keystoreclient
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -42,6 +43,7 @@ type Keystoreclient struct {
 	linker      link
 	retries     int
 	backoffTime time.Duration
+	Fail        bool
 }
 
 // Save saves a proto
@@ -53,6 +55,9 @@ func (c *Keystoreclient) Save(ctx context.Context, key string, message proto.Mes
 
 // Load loads a proto
 func (c *Keystoreclient) Read(ctx context.Context, key string, typ proto.Message) (proto.Message, *pbd.ReadResponse, error) {
+	if c.Fail {
+		return nil, nil, fmt.Errorf("Directed to fail")
+	}
 	res, err := c.linker.Read(ctx, &pbd.ReadRequest{Key: key})
 	if err != nil {
 		return nil, nil, err

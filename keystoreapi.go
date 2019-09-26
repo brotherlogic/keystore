@@ -75,7 +75,7 @@ type KeyStore struct {
 }
 
 type prodVersionWriter struct {
-	dial func(server string) (*grpc.ClientConn, error)
+	dial func(name string) (*grpc.ClientConn, error)
 }
 
 // This performs a fan out write
