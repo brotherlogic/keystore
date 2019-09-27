@@ -19,6 +19,7 @@ type Store struct {
 	Path         string
 	Meta         *pb.StoreMeta
 	lastSnapshot int64
+	fileMeta     map[string]*pb.FileMeta
 }
 
 //InitStore builds out a store
@@ -34,7 +35,9 @@ func InitStore(p string) Store {
 	}
 
 	s := Store{
-		Path: p, Meta: meta,
+		Path:     p,
+		Meta:     meta,
+		fileMeta: make(map[string]*pb.FileMeta),
 	}
 	return s
 }
@@ -69,7 +72,7 @@ func (k *Store) GetStored() []string {
 					deleted = true
 				}
 			}
-			if !deleted {
+			if !deleted && !strings.HasSuffix(key, ".meta") {
 				files = append(files, key)
 			}
 		}
@@ -94,7 +97,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	}
 
 	//Don't write if the proto matches
-	data, err := k.LocalReadBytes(key)
+	data, fileMeta, err := k.LocalReadBytes(key)
 	if err == nil && match(data, bytes) {
 		return k.Meta.GetVersion(), nil
 	}
@@ -108,18 +111,38 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 
 	//Increment the version
 	k.Meta.Version++
+	fileMeta.Version++
 	k.saveMeta()
 
-	return k.Meta.Version, nil
+	return k.Meta.Version, k.saveFileMeta(fullpath, fileMeta)
+}
+
+func (k *Store) saveFileMeta(dataPath string, fileMeta *pb.FileMeta) error {
+	data, _ := proto.Marshal(fileMeta)
+	return ioutil.WriteFile(dataPath+".meta", data, 0644)
+}
+
+func (k *Store) readFileMeta(dataPath string, err error) (*pb.FileMeta, error) {
+	if err != nil {
+		return &pb.FileMeta{}, err
+	}
+
+	data, err := ioutil.ReadFile(dataPath + ".meta")
+	fileMeta := &pb.FileMeta{}
+	if err == nil {
+		proto.Unmarshal(data, fileMeta)
+	}
+	return fileMeta, err
 }
 
 //LocalReadBytes reads bytes
-func (k *Store) LocalReadBytes(key string) ([]byte, error) {
+func (k *Store) LocalReadBytes(key string) ([]byte, *pb.FileMeta, error) {
 	for _, k := range k.Meta.DeletedKeys {
 		if k == key {
-			return []byte{}, status.Error(codes.OutOfRange, "Cannot read deleted key")
+			return []byte{}, nil, status.Error(codes.OutOfRange, "Cannot read deleted key")
 		}
 	}
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
-	return data, err
+	fileMeta, err := k.readFileMeta(k.Path+adjustKey(key), err)
+	return data, fileMeta, err
 }

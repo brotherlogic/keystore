@@ -39,7 +39,7 @@ func TestLoad(t *testing.T) {
 	}
 
 	s2 := InitStoreTest(".test_load", false)
-	resp, err := s2.LocalReadBytes("key")
+	resp, _, err := s2.LocalReadBytes("key")
 	if err != nil {
 		t.Fatalf("Failed read: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestDeleteKey(t *testing.T) {
 		t.Errorf("Saved deleted key")
 	}
 
-	_, err = s.LocalReadBytes("key")
+	_, _, err = s.LocalReadBytes("key")
 	if err == nil {
 		t.Errorf("Loaded deleted key")
 	}
@@ -96,7 +96,7 @@ func TestListDeletedKey(t *testing.T) {
 		t.Errorf("Saved deleted key")
 	}
 
-	_, err = s.LocalReadBytes("/key")
+	_, _, err = s.LocalReadBytes("/key")
 	if err != nil {
 		t.Errorf("Loaded deleted key")
 	}

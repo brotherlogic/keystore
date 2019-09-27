@@ -10,6 +10,10 @@ message DeleteObject{
   int64 deletes = 1;
 }
 
+message FileMeta {
+  int64 version = 1;
+}
+
 message SaveRequest {
   string key = 1;
   google.protobuf.Any value = 2;
