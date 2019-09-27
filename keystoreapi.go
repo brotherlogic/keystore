@@ -346,7 +346,7 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	k.readCountsMutex.Unlock()
 
 	t := time.Now()
-	data, err := k.store.LocalReadBytes(req.Key)
+	data, _, err := k.store.LocalReadBytes(req.Key)
 
 	if err != nil {
 		return nil, err
