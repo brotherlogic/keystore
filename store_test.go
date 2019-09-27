@@ -109,3 +109,14 @@ func TestListDeletedKey(t *testing.T) {
 	}
 
 }
+
+func TestColdRead(t *testing.T) {
+	s := InitStoreTest(".test_cold", true)
+	s.LocalSaveBytes("/boing", []byte("blah"))
+	os.Remove(".test_cold/boing.meta")
+
+	_, meta, err := s.LocalReadBytes("/boing")
+	if err != nil || meta.Version != 0 {
+		t.Errorf("Bad read: %v and %v", meta, err)
+	}
+}

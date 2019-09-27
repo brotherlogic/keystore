@@ -128,9 +128,13 @@ func (k *Store) readFileMeta(dataPath string, err error) (*pb.FileMeta, error) {
 	}
 
 	data, err := ioutil.ReadFile(dataPath + ".meta")
+
 	fileMeta := &pb.FileMeta{}
 	if err == nil {
 		proto.Unmarshal(data, fileMeta)
+	} else if os.IsNotExist(err) {
+		// keep the empty metadata and move on
+		err = nil
 	}
 	return fileMeta, err
 }
