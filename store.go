@@ -61,8 +61,8 @@ func match(a, b []byte) bool {
 }
 
 // GetStored gets all the local keys
-func (k *Store) GetStored() []string {
-	files := make([]string, 0)
+func (k *Store) GetStored() []*pb.FileMeta {
+	files := make([]*pb.FileMeta, 0)
 	filepath.Walk(k.Path, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() && info.Name() != "root.meta" {
 			key := path[len(k.Path):]
@@ -73,7 +73,10 @@ func (k *Store) GetStored() []string {
 				}
 			}
 			if !deleted && !strings.HasSuffix(key, ".meta") {
-				files = append(files, key)
+				meta, err := k.readFileMeta(key, k.Path, nil)
+				if err == nil {
+					files = append(files, meta)
+				}
 			}
 		}
 		return nil
@@ -122,14 +125,14 @@ func (k *Store) saveFileMeta(dataPath string, fileMeta *pb.FileMeta) error {
 	return ioutil.WriteFile(dataPath+".meta", data, 0644)
 }
 
-func (k *Store) readFileMeta(dataPath string, err error) (*pb.FileMeta, error) {
+func (k *Store) readFileMeta(key string, dataPath string, err error) (*pb.FileMeta, error) {
 	if err != nil {
 		return &pb.FileMeta{}, err
 	}
 
 	data, err := ioutil.ReadFile(dataPath + ".meta")
 
-	fileMeta := &pb.FileMeta{}
+	fileMeta := &pb.FileMeta{Key: key}
 	if err == nil {
 		proto.Unmarshal(data, fileMeta)
 	} else if os.IsNotExist(err) {
@@ -147,6 +150,6 @@ func (k *Store) LocalReadBytes(key string) ([]byte, *pb.FileMeta, error) {
 		}
 	}
 	data, err := ioutil.ReadFile(k.Path + adjustKey(key))
-	fileMeta, err := k.readFileMeta(k.Path+adjustKey(key), err)
+	fileMeta, err := k.readFileMeta(key, k.Path+adjustKey(key), err)
 	return data, fileMeta, err
 }

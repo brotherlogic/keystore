@@ -36,7 +36,7 @@ func findServers() []*pbdi.RegistryEntry {
 	return rets
 }
 
-func getKeys(s *pbdi.RegistryEntry) []string {
+func getKeys(s *pbdi.RegistryEntry) []*pb.FileMeta {
 	conn, _ := grpc.Dial(s.GetIp()+":"+strconv.Itoa(int(s.GetPort())), grpc.WithInsecure())
 	defer conn.Close()
 
@@ -86,12 +86,12 @@ func main() {
 
 	for _, key := range getKeys(mainServer) {
 		t := time.Now()
-		vm := read(mainServer, key)
+		vm := read(mainServer, key.Key)
 		fmt.Printf("Key [%v]: %v = %v\n", time.Now().Sub(t), key, vm)
 		for _, s := range servers {
 			if !s.GetMaster() {
 				t = time.Now()
-				v := read(s, key)
+				v := read(s, key.Key)
 				if v != vm {
 					fmt.Printf(" Key [%v]: %v = %v [FAIL]\n", time.Now().Sub(t), key, v)
 				} else {
