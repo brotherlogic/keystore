@@ -12,6 +12,7 @@ message DeleteObject{
 
 message FileMeta {
   int64 version = 1;
+  string key = 2;
 }
 
 message SaveRequest {
@@ -41,7 +42,7 @@ message GetDirectoryRequest {
 }
 
 message GetDirectoryResponse {
-  repeated string keys = 1;
+  repeated FileMeta keys = 1;
   int64 version = 2;
 }
 

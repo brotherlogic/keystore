@@ -269,7 +269,7 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 	// Process and Store
 	for _, entry := range dir.GetKeys() {
 		t := time.Now()
-		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
+		data, err := client.Read(ctx, &pb.ReadRequest{Key: entry.Key}, grpc.MaxCallRecvMsgSize(1024*1024*1024))
 		if err != nil {
 			return fmt.Errorf("Failure on %v: %v", entry, err)
 		}
@@ -277,7 +277,7 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 			k.longRead = time.Now().Sub(t)
 			k.longReadKey = fmt.Sprintf("%v", entry)
 		}
-		k.store.LocalSaveBytes(entry, data.GetPayload().GetValue())
+		k.store.LocalSaveBytes(entry.Key, data.GetPayload().GetValue())
 	}
 	//Update the meta, including deletes
 	k.store.Meta = meta

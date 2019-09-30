@@ -29,7 +29,7 @@ func (masterGetter testFailGDMasterGetter) Read(ctx context.Context, in *pb.Read
 type testMasterGetter struct{}
 
 func (masterGetter testMasterGetter) GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
-	return &pb.GetDirectoryResponse{Keys: []string{"key1", "key2"}, Version: 123}, nil
+	return &pb.GetDirectoryResponse{Keys: []*pb.FileMeta{&pb.FileMeta{Key: "key1"}, &pb.FileMeta{Key: "key2"}}, Version: 123}, nil
 }
 
 func (masterGetter testMasterGetter) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error) {
@@ -41,7 +41,7 @@ func (masterGetter testMasterGetter) Read(ctx context.Context, in *pb.ReadReques
 type testFailRMasterGetter struct{}
 
 func (masterGetter testFailRMasterGetter) GetDirectory(ctx context.Context, in *pb.GetDirectoryRequest) (*pb.GetDirectoryResponse, error) {
-	return &pb.GetDirectoryResponse{Keys: []string{"key1", "key2"}, Version: 123}, nil
+	return &pb.GetDirectoryResponse{Keys: []*pb.FileMeta{&pb.FileMeta{Key: "key1"}, &pb.FileMeta{Key: "key2"}}, Version: 123}, nil
 }
 
 func (masterGetter testFailRMasterGetter) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse, error) {
@@ -187,7 +187,7 @@ func TestGetDirectory(t *testing.T) {
 
 	found := false
 	for _, k := range dir.Keys {
-		if k == "madeup/key/one" {
+		if k.Key == "madeup/key/one" {
 			found = true
 		}
 	}
