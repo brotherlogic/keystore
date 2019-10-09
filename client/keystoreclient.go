@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pbd "github.com/brotherlogic/keystore/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
@@ -29,7 +31,10 @@ func (l *localLinker) Save(ctx context.Context, req *pbd.SaveRequest) (*pbd.Empt
 
 //Read reads a proto
 func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.ReadResponse, error) {
-	return &pbd.ReadResponse{Payload: l.store[req.Key]}, nil
+	if val, ok := l.store[req.Key]; ok {
+		return &pbd.ReadResponse{Payload: val}, nil
+	}
+	return nil, status.Error(codes.NotFound, fmt.Sprintf("Unable to locate %v", req.Key))
 }
 
 type link interface {

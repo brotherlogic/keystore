@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -13,6 +14,8 @@ import (
 	"github.com/brotherlogic/goserver/utils"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	pbd "github.com/brotherlogic/discovery/proto"
 	pbgs "github.com/brotherlogic/goserver/proto"
@@ -349,6 +352,10 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	data, _, err := k.store.LocalReadBytes(req.Key)
 
 	if err != nil {
+		//Adjust the error code if necessary
+		if os.IsNotExist(err) {
+			err = status.Error(codes.NotFound, fmt.Sprintf("%v", err))
+		}
 		return nil, err
 	}
 
