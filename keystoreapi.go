@@ -405,5 +405,5 @@ func main() {
 	}
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
-	fmt.Sprintf("%v", server.Serve())
+	fmt.Sprintf("Serving: %v", server.Serve())
 }
