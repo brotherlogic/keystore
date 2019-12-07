@@ -399,7 +399,10 @@ func main() {
 
 	server.PrepServer()
 	server.RPCTracing = true
-	server.RegisterServerV2("keystore", false, false)
+	err := server.RegisterServerV2("keystore", false, false)
+	if err != nil {
+		log.Fatalf("Unable to register: %v", err)
+	}
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
 	fmt.Sprintf("%v", server.Serve())
