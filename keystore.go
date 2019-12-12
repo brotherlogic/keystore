@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/grpc/status"
 
 	pb "github.com/brotherlogic/keystore/proto"
 )
@@ -33,7 +34,7 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 	//Check that we're up with version store
 	vers, err := k.serverVersionWriter.read()
 	if err != nil {
-		return fmt.Errorf("Unable to determine where we are: %v", err)
+		return status.Errorf(status.Convert(err).Code(), "Unable to determine where we are: %v", err)
 	}
 	if k.store.Meta.Version < vers.GetValue() {
 		return fmt.Errorf("We're behind version store: %v and %v", k.store.Meta, vers)

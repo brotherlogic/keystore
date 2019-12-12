@@ -18,6 +18,7 @@ import (
 
 	//Needed to pull in gzip encoding init
 	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/resolver"
 )
 
 func doDial(entry *pbd.RegistryEntry) (*grpc.ClientConn, error) {
@@ -33,25 +34,29 @@ func dialMaster(server string) (*grpc.ClientConn, error) {
 	return doDial(&pbd.RegistryEntry{Ip: ip, Port: port})
 }
 
+func init() {
+	resolver.Register(&utils.DiscoveryClientResolverBuilder{})
+}
+
 func main() {
 	client := keystoreclient.GetClient(dialMaster)
 	if len(os.Args) == 1 {
 		client.Save(context.Background(), "/testingkeytryagain2", &pb.Card{Text: "Testing222"})
 
-		conn, err := dialMaster("keystore")
+		conn, err := grpc.Dial("discovery:///keystore", grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
 		}
 		defer conn.Close()
 
 		registry := pbk.NewKeyStoreServiceClient(conn)
-		res, err := registry.GetMeta(context.Background(), &pbk.Empty{}, grpc.FailFast(false))
+		res, err := registry.GetMeta(context.Background(), &pbk.Empty{})
 		if err != nil {
 			log.Fatalf("Error doing compare job: %v", err)
 		}
 		fmt.Printf("GOT %v", res)
 	} else {
-		conn, err := dialMaster("keystore")
+		conn, err := grpc.Dial("discovery:///keystore", grpc.WithInsecure())
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
 		}
