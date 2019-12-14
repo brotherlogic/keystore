@@ -24,10 +24,12 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 
 	entries := k.serverGetter.getServers()
 	for _, entry := range entries {
-		meta := k.serverStatusGetter.getStatus(entry)
+		if entry.Ip != k.Registry.Ip {
+			meta := k.serverStatusGetter.getStatus(entry)
 
-		if meta.GetVersion() > k.store.Meta.GetVersion() {
-			return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.store.Meta.GetVersion())
+			if meta.GetVersion() > k.store.Meta.GetVersion() {
+				return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.store.Meta.GetVersion())
+			}
 		}
 	}
 
