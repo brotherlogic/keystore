@@ -15,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	pbd "github.com/brotherlogic/discovery/proto"
@@ -360,7 +361,8 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	}
 
 	if len(data) == 0 {
-		return nil, fmt.Errorf("Read is returning empty: %v", req.Key)
+		p, _ := peer.FromContext(ctx)
+		return nil, fmt.Errorf("Read is returning empty: %v -> %v (%v) and (%v)", req.GetKey(), p, req, ctx)
 	}
 
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
