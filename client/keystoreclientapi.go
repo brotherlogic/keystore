@@ -13,6 +13,7 @@ import (
 
 	//Needed to pull in gzip encoding init
 	_ "google.golang.org/grpc/encoding/gzip"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -56,9 +57,12 @@ func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRes
 		r, e := store.Read(ctx, req, grpc.FailFast(false), grpc.UseCompressor("gzip"))
 		return r, e
 	}
+	code, ok := status.FromError(err)
+	if ok {
+		return nil, status.Errorf(code.Code(), "Unable to read %v last error: %v", req.GetKey(), err)
+	}
 	return nil, fmt.Errorf("Unable to read %v last error: %v", req.GetKey(), err)
 
-	return nil, fmt.Errorf("Unable to find keystore")
 }
 
 //GetClient gets a networked client

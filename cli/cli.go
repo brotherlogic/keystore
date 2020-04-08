@@ -66,8 +66,8 @@ func main() {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 		defer cancel()
 
-		//es, err := registry.Delete(ctx, &pbk.DeleteRequest{Key: os.Args[1]})
-		res, err := registry.Read(ctx, &pbk.ReadRequest{Key: os.Args[1]})
+		res, err := registry.Delete(ctx, &pbk.DeleteRequest{Key: os.Args[1]})
+		//res, err := registry.Read(ctx, &pbk.ReadRequest{Key: os.Args[1]})
 		if err != nil {
 			log.Fatalf("Error on read: %v", err)
 		}
