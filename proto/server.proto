@@ -4,6 +4,8 @@ package keystore;
 
 import "github.com/golang/protobuf/ptypes/any/any.proto";
 
+option go_package = ".;keystore";
+
 message Empty {}
 
 message DeleteObject{
