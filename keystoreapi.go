@@ -403,7 +403,7 @@ func main() {
 	server.RPCTracing = true
 	err := server.RegisterServerV2("keystore", false, false)
 	if err != nil {
-		log.Fatalf("Unable to register: %v", err)
+		return
 	}
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
