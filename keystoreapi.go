@@ -299,7 +299,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	k.saveRequests++
 	if len(req.Value.Value) == 0 {
 		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v", req), false)
-		return &pb.Empty{}, fmt.Errorf("Empty Write")
+		return &pb.Empty{}, fmt.Errorf("Empty Write - bytes = %v", proto.Size(req.Value))
 	}
 
 	if k.state == pb.State_HARD_SYNC {

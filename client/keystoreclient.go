@@ -53,8 +53,11 @@ type Keystoreclient struct {
 
 // Save saves a proto
 func (c *Keystoreclient) Save(ctx context.Context, key string, message proto.Message) error {
-	bytes, _ := proto.Marshal(message)
-	_, err := c.linker.Save(ctx, &pbd.SaveRequest{Key: key, Value: &google_protobuf.Any{Value: bytes}})
+	bytes, err := proto.Marshal(message)
+	if err != nil {
+		return err
+	}
+	_, err = c.linker.Save(ctx, &pbd.SaveRequest{Key: key, Value: &google_protobuf.Any{Value: bytes}})
 	return err
 }
 
