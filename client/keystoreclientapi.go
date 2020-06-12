@@ -21,7 +21,7 @@ const (
 	waitTimeBound = 10
 )
 
-type getIP func(servername string) (*grpc.ClientConn, error)
+type getIP func(ctx context.Context, servername string) (*grpc.ClientConn, error)
 
 //Prodlinker Production ready linker
 type Prodlinker struct {
@@ -32,7 +32,7 @@ type Prodlinker struct {
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	err := errors.New("first pass fail")
 	for i := 0; i < retries; i++ {
-		conn, err := p.getter("keystore")
+		conn, err := p.getter(ctx, "keystore")
 
 		if err == nil {
 			defer conn.Close()
@@ -49,7 +49,7 @@ func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, 
 
 //Read reads out the thingy
 func (p *Prodlinker) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
-	conn, err := p.getter("keystore")
+	conn, err := p.getter(ctx, "keystore")
 	if err == nil {
 		defer conn.Close()
 
