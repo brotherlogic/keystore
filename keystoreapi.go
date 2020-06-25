@@ -293,12 +293,12 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	// Prevent large saves
 	if proto.Size(req.Value) > 1024*1024 {
-		k.RaiseIssue(ctx, "Large Write", fmt.Sprintf("Attempting to write a large proto for %v", req.GetKey()), false)
+		k.RaiseIssue("Large Write", fmt.Sprintf("Attempting to write a large proto for %v", req.GetKey()))
 	}
 
 	k.saveRequests++
 	if len(req.Value.Value) == 0 {
-		k.RaiseIssue(ctx, "Bad Write", fmt.Sprintf("Bad write spec: %v -> %v", req, ctx), false)
+		k.RaiseIssue("Bad Write", fmt.Sprintf("Bad write spec: %v -> %v", req, ctx))
 		return &pb.Empty{}, fmt.Errorf("Empty Write - bytes = %v", proto.Size(req.Value))
 	}
 
@@ -311,14 +311,14 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	} else {
 		k.fanWrites++
 		if req.GetMeta() == nil {
-			k.RaiseIssue(ctx, "Bad fan write", fmt.Sprintf("Bad fanout request: %v", req), false)
+			k.RaiseIssue("Bad fan write", fmt.Sprintf("Bad fanout request: %v", req))
 			return nil, fmt.Errorf("Bad request")
 		}
 		k.store.Meta.DeletedKeys = req.GetMeta().DeletedKeys
 	}
 
 	if time.Now().Sub(k.lastSuccessfulWrite) > time.Hour {
-		k.RaiseIssue(ctx, "Keystore behind", fmt.Sprintf("%v has been behind for an hour -> last successful write was at %v", k.Registry.Identifier, k.lastSuccessfulWrite), false)
+		k.RaiseIssue("Keystore behind", fmt.Sprintf("%v has been behind for an hour -> last successful write was at %v", k.Registry.Identifier, k.lastSuccessfulWrite))
 	}
 
 	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
@@ -401,7 +401,7 @@ func main() {
 
 	server.PrepServer()
 	server.RPCTracing = true
-	err := server.RegisterServerV2("keystore", false, false)
+	err := server.RegisterServerV2("keystore", false, true)
 	if err != nil {
 		return
 	}

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/brotherlogic/goserver/utils"
@@ -21,17 +21,31 @@ import (
 	"google.golang.org/grpc/resolver"
 )
 
-func doDial(entry *pbd.RegistryEntry) (*grpc.ClientConn, error) {
-	return grpc.Dial(entry.Ip+":"+strconv.Itoa(int(entry.Port)), grpc.WithInsecure())
+// FDial fundamental dial
+func fial(host string) (*grpc.ClientConn, error) {
+	return grpc.Dial(host, grpc.WithInsecure())
 }
 
-func dialMaster(server string) (*grpc.ClientConn, error) {
-	ip, port, err := utils.Resolve(server, "keystorecli")
+func dialServer(ctx context.Context, servername string) (*grpc.ClientConn, error) {
+	if servername == "discover" {
+		return fial(fmt.Sprintf("%v:%v", utils.LocalIP, utils.RegistryPort))
+	}
+
+	conn, err := fial(utils.Discover)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	registry := pbd.NewDiscoveryServiceV2Client(conn)
+	val, err := registry.Get(ctx, &pbd.GetRequest{Job: servername})
 	if err != nil {
 		return nil, err
 	}
 
-	return doDial(&pbd.RegistryEntry{Ip: ip, Port: port})
+	// Pick a server at random
+	servernum := rand.Intn(len(val.GetServices()))
+	return fial(fmt.Sprintf("%v:%v", val.GetServices()[servernum].GetIp(), val.GetServices()[servernum].GetPort()))
 }
 
 func init() {
@@ -39,7 +53,7 @@ func init() {
 }
 
 func main() {
-	client := keystoreclient.GetClient(dialMaster)
+	client := keystoreclient.GetClient(dialServer)
 	if len(os.Args) == 1 {
 		client.Save(context.Background(), "/testingkeytryagain2", &pb.Card{Text: "Testing222"})
 
