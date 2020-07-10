@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/status"
 
 	pb "github.com/brotherlogic/keystore/proto"
 )
@@ -31,15 +30,6 @@ func (k *KeyStore) Mote(ctx context.Context, master bool) error {
 				return fmt.Errorf("We're too behind to be master (versionstore says %v, we're %v)", meta.GetVersion(), k.store.Meta.GetVersion())
 			}
 		}
-	}
-
-	//Check that we're up with version store
-	vers, err := k.serverVersionWriter.read()
-	if err != nil {
-		return status.Errorf(status.Convert(err).Code(), "Unable to determine where we are: %v", err)
-	}
-	if k.store.Meta.Version < vers.GetValue() {
-		return fmt.Errorf("We're behind version store: %v and %v", k.store.Meta, vers)
 	}
 
 	if master {
