@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -82,7 +81,7 @@ func InitTest(p string) *KeyStore {
 	s := Init(p)
 	s.GoServer.Registry = &pbd.RegistryEntry{Identifier: "madeup"}
 	s.SkipLog = true
-	s.serverVersionWriter = &testVersionWriter{written: make([]*pbvs.Version, 0)}
+	s.SkipIssue = true
 	s.masterGetter = &testMasterGetter{}
 	s.mote = true
 	return s
@@ -119,17 +118,11 @@ func TestResyncFailOnR(t *testing.T) {
 
 func TestWriteVersion(t *testing.T) {
 	s := InitTest(".testVersionWriter")
-	d := &testVersionWriter{written: make([]*pbvs.Version, 0)}
-	s.serverVersionWriter = d
 	emp, _ := proto.Marshal(&pb.SaveRequest{Key: "testing"})
 	s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
 
 	time.Sleep(time.Second)
 
-	log.Printf("WHA = %v", d)
-	if len(d.written) != 1 {
-		t.Errorf("Version has not been written: %v", d.written)
-	}
 }
 
 func BenchmarkBasicSave(b *testing.B) {

@@ -81,7 +81,6 @@ func (i *integrationVersionWriter) read() (*pbvs.Version, error) {
 type integrationSetup struct {
 	master    *KeyStore
 	followers []*KeyStore
-	svw       serverVersionWriter
 }
 
 func InitIntegrationTest(numFollowers int) *integrationSetup {
@@ -89,9 +88,8 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 
 	master := Init(".inttest/master/")
 	master.SkipLog = true
+	master.SkipIssue = true
 	master.GoServer.Registry = &pbd.RegistryEntry{Identifier: "iammaster"}
-	svw := &integrationVersionWriter{}
-	master.serverVersionWriter = svw
 
 	sg := &integrationServerGetter{numFollowers: numFollowers}
 	master.serverGetter = sg
@@ -105,14 +103,13 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 	for i := 1; i <= numFollowers; i++ {
 		follower := Init(fmt.Sprintf(".inttest/follower%v/", i))
 		follower.SkipLog = true
+		follower.SkipIssue = true
 		follower.GoServer.Registry = &pbd.RegistryEntry{Identifier: fmt.Sprintf("iamfollower%v", i)}
 		follower.serverStatusGetter = statusGetter
-		follower.serverVersionWriter = svw
 		follower.serverGetter = sg
 		followers = append(followers, follower)
 	}
 	setup.followers = followers
-	setup.svw = svw
 
 	return setup
 }
@@ -143,12 +140,9 @@ func TestBasicWrite(t *testing.T) {
 
 	//Follower should reflect write
 	for i := 0; i < 2; i++ {
-		meta, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
+		_, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
 		if err != nil {
 			t.Fatalf("Read of follower meta failed: %v", err)
-		}
-		if meta.Version != 1 {
-			t.Errorf("Follower Meta has returned wrong: %v", meta)
 		}
 	}
 
@@ -179,16 +173,9 @@ func TestBasicWrite(t *testing.T) {
 
 	//Follower should reflect write
 	for i := 0; i < 2; i++ {
-		meta, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
+		_, err := testSetup.followers[i].GetMeta(context.Background(), &pb.Empty{})
 		if err != nil {
 			t.Fatalf("Read of follower meta failed: %v", err)
-		}
-		if meta.Version != 2 {
-			t.Errorf("Follower Meta has returned wrong: %v", meta)
-		}
-
-		if testSetup.followers[i].saveRequests != 2 {
-			t.Errorf("Wrong number of save requests")
 		}
 	}
 

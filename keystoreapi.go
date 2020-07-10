@@ -56,7 +56,6 @@ type KeyStore struct {
 	store               *Store
 	serverGetter        serverGetter
 	serverStatusGetter  serverStatusGetter
-	serverVersionWriter serverVersionWriter
 	masterGetter        masterGetter
 	state               pb.State
 	mote                bool
@@ -76,41 +75,6 @@ type KeyStore struct {
 	saveRequests        int64
 	readCounts          map[string]int
 	readCountsMutex     *sync.Mutex
-}
-
-type prodVersionWriter struct {
-	dial func(name string) (*grpc.ClientConn, error)
-}
-
-// This performs a fan out write
-func (serverVersionWriter *prodVersionWriter) write(v *pbvs.Version) error {
-	conn, err := serverVersionWriter.dial("versionserver")
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	client := pbvs.NewVersionServerClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-	defer cancel()
-
-	_, err = client.SetVersion(ctx, &pbvs.SetVersionRequest{Set: v})
-	return err
-}
-
-func (serverVersionWriter *prodVersionWriter) read() (*pbvs.Version, error) {
-	conn, err := serverVersionWriter.dial("versionserver")
-	if err != nil {
-		return nil, err
-	}
-	defer conn.Close()
-
-	client := pbvs.NewVersionServerClient(conn)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	val, err := client.GetVersion(ctx, &pbvs.GetVersionRequest{Key: VersionKey})
-	return val.GetVersion(), err
 }
 
 type prodServerGetter struct {
@@ -210,7 +174,6 @@ func Init(p string) *KeyStore {
 	ks.Register = ks
 	ks.serverGetter = &prodServerGetter{}
 	ks.serverStatusGetter = &prodServerStatusGetter{ks.DoDial}
-	ks.serverVersionWriter = &prodVersionWriter{ks.DialMaster}
 	ks.lastSuccessfulWrite = time.Now()
 	ks.readCounts = make(map[string]int)
 	ks.readCountsMutex = &sync.Mutex{}
@@ -331,16 +294,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 	}
 
 	k.lastSuccessfulWrite = time.Now()
-	v, _ := k.store.LocalSaveBytes(req.Key, req.Value.Value)
-
-	// Fanout the writes async
-	if req.GetWriteVersion() == 0 {
-		k.serverVersionWriter.write(&pbvs.Version{Key: VersionKey, Value: v, Setter: k.Registry.Identifier + "-keystore"})
-		req.Meta = &pb.StoreMeta{Version: v, DeletedKeys: k.store.Meta.DeletedKeys}
-		req.Origin = k.Registry.Identifier
-		req.WriteVersion = v
-		go k.fanoutWrite(req)
-	}
+	k.store.LocalSaveBytes(req.Key, req.Value.Value)
 
 	return &pb.Empty{}, nil
 }
