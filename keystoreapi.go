@@ -311,7 +311,7 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	if err != nil {
 		//Adjust the error code if necessary
 		if os.IsNotExist(err) {
-			err = status.Error(codes.NotFound, fmt.Sprintf("%v", err))
+			err = status.Error(codes.InvalidArgument, fmt.Sprintf("%v", err))
 		}
 		return nil, err
 	}
