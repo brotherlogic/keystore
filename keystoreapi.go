@@ -177,6 +177,10 @@ func Init(p string) *KeyStore {
 	ks.lastSuccessfulWrite = time.Now()
 	ks.readCounts = make(map[string]int)
 	ks.readCountsMutex = &sync.Mutex{}
+
+	// Don't record the body of server requests here
+	ks.NoBody = true
+
 	return ks
 }
 
