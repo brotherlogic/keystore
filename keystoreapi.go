@@ -263,7 +263,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.RaiseIssue("Large Write", fmt.Sprintf("Attempting to write a large proto for %v", req.GetKey()))
 	}
 
-	k.RaiseIssue("Keystore Write", fmt.Sprintf("%v is being written to keystore", req.GetKey()))
+	//k.RaiseIssue("Keystore Write", fmt.Sprintf("%v is being written to keystore", req.GetKey()))
 
 	k.saveRequests++
 	if len(req.Value.Value) == 0 {
