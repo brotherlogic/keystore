@@ -286,10 +286,6 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 		k.store.Meta.DeletedKeys = req.GetMeta().DeletedKeys
 	}
 
-	if time.Now().Sub(k.lastSuccessfulWrite) > time.Hour {
-		k.RaiseIssue("Keystore behind", fmt.Sprintf("%v has been behind for an hour -> last successful write was at %v", k.Registry.Identifier, k.lastSuccessfulWrite))
-	}
-
 	if req.GetWriteVersion() > k.store.Meta.GetVersion()+1 {
 		k.catchups++
 		k.state = pb.State_HARD_SYNC
