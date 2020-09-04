@@ -1,9 +1,7 @@
 package keystoreclient
 
 import (
-	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"golang.org/x/net/context"
@@ -30,21 +28,15 @@ type Prodlinker struct {
 
 //Save saves out the thingy
 func (p *Prodlinker) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	err := errors.New("first pass fail")
-	for i := 0; i < retries; i++ {
-		conn, err := p.getter(ctx, "keystore")
+	conn, err := p.getter(ctx, "keystore")
 
-		if err == nil {
-			defer conn.Close()
-
-			store := pb.NewKeyStoreServiceClient(conn)
-			return store.Save(ctx, req, grpc.FailFast(false))
-		}
-
-		time.Sleep(time.Second * time.Duration(rand.Intn(waitTimeBound)))
+	if err != nil {
+		return nil, err
 	}
+	defer conn.Close()
 
-	return &pb.Empty{}, fmt.Errorf("Unable to save %v last error: %v", req.GetKey(), err)
+	store := pb.NewKeyStoreServiceClient(conn)
+	return store.Save(ctx, req, grpc.FailFast(false))
 }
 
 //Read reads out the thingy
