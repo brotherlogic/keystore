@@ -34,7 +34,7 @@ func (l *localLinker) Read(ctx context.Context, req *pbd.ReadRequest) (*pbd.Read
 	if val, ok := l.store[req.Key]; ok {
 		return &pbd.ReadResponse{Payload: val}, nil
 	}
-	return nil, status.Error(codes.NotFound, fmt.Sprintf("Unable to locate %v", req.Key))
+	return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Unable to locate %v", req.Key))
 }
 
 type link interface {
