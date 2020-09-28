@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
@@ -20,6 +21,7 @@ type Store struct {
 	Meta         *pb.StoreMeta
 	lastSnapshot int64
 	fileMeta     map[string]*pb.FileMeta
+	mainMutex    *sync.Mutex
 }
 
 //InitStore builds out a store
@@ -35,9 +37,10 @@ func InitStore(p string) Store {
 	}
 
 	s := Store{
-		Path:     p,
-		Meta:     meta,
-		fileMeta: make(map[string]*pb.FileMeta),
+		Path:      p,
+		Meta:      meta,
+		fileMeta:  make(map[string]*pb.FileMeta),
+		mainMutex: &sync.Mutex{},
 	}
 	return s
 }
@@ -93,6 +96,8 @@ func adjustKey(key string) string {
 
 //LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
+	k.mainMutex.Lock()
+	defer k.mainMutex.Unlock()
 	for _, k := range k.Meta.DeletedKeys {
 		if k == key {
 			return 0, fmt.Errorf("Can't write to deleted key")
@@ -100,7 +105,7 @@ func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	}
 
 	//Don't write if the proto matches
-	data, fileMeta, err := k.LocalReadBytes(key)
+	data, fileMeta, err := k.LocalReadBytes(key, true)
 	if err == nil && match(data, bytes) {
 		return k.Meta.GetVersion(), nil
 	}
@@ -143,7 +148,11 @@ func (k *Store) readFileMeta(key string, dataPath string, err error) (*pb.FileMe
 }
 
 //LocalReadBytes reads bytes
-func (k *Store) LocalReadBytes(key string) ([]byte, *pb.FileMeta, error) {
+func (k *Store) LocalReadBytes(key string, locked bool) ([]byte, *pb.FileMeta, error) {
+	if !locked {
+		k.mainMutex.Lock()
+		defer k.mainMutex.Unlock()
+	}
 	for _, k := range k.Meta.DeletedKeys {
 		if k == key {
 			return []byte{}, nil, status.Error(codes.OutOfRange, "Cannot read deleted key")

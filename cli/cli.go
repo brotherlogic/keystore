@@ -10,11 +10,15 @@ import (
 
 	"github.com/brotherlogic/goserver/utils"
 	"github.com/brotherlogic/keystore/client"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
 	pb "github.com/brotherlogic/cardserver/card"
 	pbd "github.com/brotherlogic/discovery/proto"
 	pbk "github.com/brotherlogic/keystore/proto"
+	ppb "github.com/brotherlogic/proxy/proto"
+
+	google_protobuf "github.com/golang/protobuf/ptypes/any"
 
 	//Needed to pull in gzip encoding init
 	_ "google.golang.org/grpc/encoding/gzip"
@@ -70,18 +74,26 @@ func main() {
 		}
 		fmt.Printf("GOT %v", res)
 	} else {
-		conn, err := grpc.Dial("discovery:///keystore", grpc.WithInsecure())
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
+		conn, err := utils.LFDialServer(ctx, "keystore")
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
 		}
 		defer conn.Close()
 
 		registry := pbk.NewKeyStoreServiceClient(conn)
-		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
-		defer cancel()
 
-		res, err := registry.Delete(ctx, &pbk.DeleteRequest{Key: os.Args[1]})
+		//res, err := registry.Delete(ctx, &pbk.DeleteRequest{Key: os.Args[1]})
 		//res, err := registry.Read(ctx, &pbk.ReadRequest{Key: os.Args[1]})
+		data := &ppb.GithubKey{Key: os.Args[2]}
+		bytes, err := proto.Marshal(data)
+		if err != nil {
+			log.Fatalf("Error: %v", err)
+		}
+
+		res, err := registry.Save(ctx, &pbk.SaveRequest{Key: os.Args[1], Value: &google_protobuf.Any{Value: bytes}})
 		if err != nil {
 			log.Fatalf("Error on read: %v", err)
 		}
