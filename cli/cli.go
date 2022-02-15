@@ -13,10 +13,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc"
 
-	pb "github.com/brotherlogic/cardserver/card"
 	pbd "github.com/brotherlogic/discovery/proto"
+	pbgd "github.com/brotherlogic/godiscogs"
 	pbk "github.com/brotherlogic/keystore/proto"
 	ppb "github.com/brotherlogic/proxy/proto"
+	pbrc "github.com/brotherlogic/recordcollection/proto"
 
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 
@@ -59,9 +60,9 @@ func init() {
 func main() {
 	client := keystoreclient.GetClient(dialServer)
 	if len(os.Args) == 1 {
-		client.Save(context.Background(), "/testingkeytryagain2", &pb.Card{Text: "Testing222"})
+		client.Save(context.Background(), "/github.com/brotherlogic/recordcollection/records/683829277", &pbrc.Record{Release: &pbgd.Release{Id: 14881954, InstanceId: 683829277}})
 
-		conn, err := grpc.Dial("discovery:///keystore", grpc.WithInsecure())
+		conn, err := utils.LFDialServer(context.Background(), "keystore")
 		if err != nil {
 			log.Fatalf("Cannot dial master: %v", err)
 		}

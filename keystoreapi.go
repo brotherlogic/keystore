@@ -260,7 +260,7 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
 	// Prevent large saves
 	if proto.Size(req.Value) > 1024*1024 {
-		k.RaiseIssue("Large Write", fmt.Sprintf("Attempting to write a large proto for %v", req.GetKey()))
+		k.RaiseIssue("Large Write", fmt.Sprintf("Attempting to write a large proto for %v (%v)", req.GetKey(), proto.Size(req.Value)))
 	}
 
 	//k.RaiseIssue("Keystore Write", fmt.Sprintf("%v is being written to keystore", req.GetKey()))
@@ -363,5 +363,5 @@ func main() {
 	}
 	server.mote = *mote
 	server.serverGetter = &prodServerGetter{server: server.Registry.GetIdentifier()}
-	fmt.Sprintf("Serving: %v", server.Serve())
+	fmt.Printf("Serving: %v", server.Serve())
 }

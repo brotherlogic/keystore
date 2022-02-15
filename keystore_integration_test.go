@@ -16,7 +16,7 @@ import (
 )
 
 type integrationStatusGetter struct {
-	setup *integrationSetup
+	setup *IntegrationSetup
 }
 
 func (i *integrationStatusGetter) getStatus(reg *pbd.RegistryEntry) *pb.StoreMeta {
@@ -78,12 +78,14 @@ func (i *integrationVersionWriter) read() (*pbvs.Version, error) {
 	return i.version, nil
 }
 
-type integrationSetup struct {
+//IntegrationSetup setup for itests
+type IntegrationSetup struct {
 	master    *KeyStore
 	followers []*KeyStore
 }
 
-func InitIntegrationTest(numFollowers int) *integrationSetup {
+//InitIntegrationTest preps for tests
+func InitIntegrationTest(numFollowers int) *IntegrationSetup {
 	os.RemoveAll(".inttest")
 
 	master := Init(".inttest/master/")
@@ -94,7 +96,7 @@ func InitIntegrationTest(numFollowers int) *integrationSetup {
 	sg := &integrationServerGetter{numFollowers: numFollowers}
 	master.serverGetter = sg
 
-	setup := &integrationSetup{}
+	setup := &IntegrationSetup{}
 	statusGetter := &integrationStatusGetter{setup: setup}
 	master.serverStatusGetter = statusGetter
 	setup.master = master
