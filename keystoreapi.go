@@ -303,7 +303,7 @@ func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, er
 func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
 	ot := time.Now()
 	defer func() {
-		k.CtxLog(ctx, fmt.Sprintf("Read for %v took %v", req.GetKey(), time.Since(ot)))
+		k.CtxLog(ctx, fmt.Sprintf("Read for key %v took %v", req.GetKey(), time.Since(ot)))
 	}()
 
 	k.readCountsMutex.Lock()
