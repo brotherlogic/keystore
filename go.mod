@@ -3,16 +3,16 @@ module github.com/brotherlogic/keystore
 go 1.16
 
 require (
-	github.com/brotherlogic/discovery v0.0.0-20220305205509-0d9c25e7c1e0
-	github.com/brotherlogic/githubcard v0.0.0-20220325163144-f79372c7d662 // indirect
-	github.com/brotherlogic/godiscogs v0.0.0-20220316201210-f64f94a68198
-	github.com/brotherlogic/goserver v0.0.0-20220326170934-0e7b69813c4c
-	github.com/brotherlogic/proxy v0.0.0-20220306230204-551d2f4b1b0f
-	github.com/brotherlogic/recordcollection v0.0.0-20220318152200-31fb2b687810
+	github.com/brotherlogic/discovery v0.0.0-20220618234737-1609f3eefe2f
+	github.com/brotherlogic/dstore v0.0.0-20220619031907-31d4fd2446ca // indirect
+	github.com/brotherlogic/godiscogs v0.0.0-20220523152004-1a5f78dd88d3
+	github.com/brotherlogic/goserver v0.0.0-20220621014042-2ca8c7d9fcf7
+	github.com/brotherlogic/proxy v0.0.0-20220613033047-63037a4c8f4b
+	github.com/brotherlogic/recordcollection v0.0.0-20220523152032-8bbc7e07eba1
 	github.com/brotherlogic/versionserver v0.0.0-20200424225322-e02615d8678f
 	github.com/golang/protobuf v1.5.2
-	golang.org/x/net v0.0.0-20220325170049-de3da57026de
-	golang.org/x/sys v0.0.0-20220325203850-36772127a21f // indirect
-	google.golang.org/grpc v1.45.0
+	github.com/prometheus/common v0.35.0 // indirect
+	golang.org/x/net v0.0.0-20220617184016-355a448f1bc9
+	google.golang.org/grpc v1.47.0
 	google.golang.org/protobuf v1.28.0
 )
