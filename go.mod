@@ -6,7 +6,7 @@ require (
 	github.com/brotherlogic/discovery v0.0.0-20220618234737-1609f3eefe2f
 	github.com/brotherlogic/dstore v0.0.0-20220619031907-31d4fd2446ca // indirect
 	github.com/brotherlogic/godiscogs v0.0.0-20220523152004-1a5f78dd88d3
-	github.com/brotherlogic/goserver v0.0.0-20220621040522-0527cf68df10
+	github.com/brotherlogic/goserver v0.0.0-20220621052236-332682ec649f
 	github.com/brotherlogic/logging v0.0.0-20220621023351-0e680bb454b9 // indirect
 	github.com/brotherlogic/proxy v0.0.0-20220613033047-63037a4c8f4b
 	github.com/brotherlogic/recordcollection v0.0.0-20220523152032-8bbc7e07eba1
