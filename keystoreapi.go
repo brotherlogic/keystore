@@ -360,9 +360,9 @@ func main() {
 		log.SetOutput(ioutil.Discard)
 	}
 
-	server.PrepServer()
+	server.PrepServer("keystore")
 	server.RPCTracing = true
-	err := server.RegisterServerV2("keystore", false, true)
+	err := server.RegisterServerV2(false)
 	if err != nil {
 		return
 	}

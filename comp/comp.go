@@ -77,9 +77,7 @@ func main() {
 	servers := findServers()
 	var mainServer *pbdi.RegistryEntry
 	for _, s := range servers {
-		if s.GetMaster() {
-			mainServer = s
-		}
+		mainServer = s
 	}
 
 	fmt.Printf("Found main server %v from %v\n\n", mainServer, len(servers))
@@ -89,14 +87,12 @@ func main() {
 		vm := read(mainServer, key.Key)
 		fmt.Printf("Key [%v]: %v = %v\n", time.Now().Sub(t), key, vm)
 		for _, s := range servers {
-			if !s.GetMaster() {
-				t = time.Now()
-				v := read(s, key.Key)
-				if v != vm {
-					fmt.Printf(" Key [%v]: %v = %v [FAIL]\n", time.Now().Sub(t), key, v)
-				} else {
-					fmt.Printf(" Key [%v]: %v = %v\n", time.Now().Sub(t), key, v)
-				}
+			t = time.Now()
+			v := read(s, key.Key)
+			if v != vm {
+				fmt.Printf(" Key [%v]: %v = %v [FAIL]\n", time.Now().Sub(t), key, v)
+			} else {
+				fmt.Printf(" Key [%v]: %v = %v\n", time.Now().Sub(t), key, v)
 			}
 		}
 	}
