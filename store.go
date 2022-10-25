@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	pb "github.com/brotherlogic/keystore/proto"
 )
@@ -24,7 +24,7 @@ type Store struct {
 	mainMutex    *sync.Mutex
 }
 
-//InitStore builds out a store
+// InitStore builds out a store
 func InitStore(p string) Store {
 	meta := &pb.StoreMeta{}
 
@@ -94,7 +94,7 @@ func adjustKey(key string) string {
 	return key
 }
 
-//LocalSaveBytes saves out a bunch of bytes
+// LocalSaveBytes saves out a bunch of bytes
 func (k *Store) LocalSaveBytes(key string, bytes []byte) (int64, error) {
 	k.mainMutex.Lock()
 	defer k.mainMutex.Unlock()
@@ -147,7 +147,7 @@ func (k *Store) readFileMeta(key string, dataPath string, err error) (*pb.FileMe
 	return fileMeta, err
 }
 
-//LocalReadBytes reads bytes
+// LocalReadBytes reads bytes
 func (k *Store) LocalReadBytes(key string, locked bool) ([]byte, *pb.FileMeta, error) {
 	if !locked {
 		k.mainMutex.Lock()

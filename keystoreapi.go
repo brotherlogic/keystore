@@ -22,8 +22,8 @@ import (
 	pbgs "github.com/brotherlogic/goserver/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
-	"github.com/golang/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -167,7 +167,7 @@ func (k *KeyStore) GetState() []*pbgs.State {
 	}
 }
 
-//Init a keystore
+// Init a keystore
 func Init(p string) *KeyStore {
 	s := InitStore(p)
 	ks := &KeyStore{GoServer: &goserver.GoServer{}, store: &s}
@@ -212,7 +212,7 @@ func (k *KeyStore) reduce() {
 	k.state = pb.State_SOFT_SYNC
 }
 
-//HardSync does a hard sync with an available keystore
+// HardSync does a hard sync with an available keystore
 func (k *KeyStore) HardSync(ctx context.Context) error {
 	k.hardSyncs++
 	defer k.reduce()
@@ -329,14 +329,14 @@ func (k *KeyStore) Read(ctx context.Context, req *pb.ReadRequest) (*pb.ReadRespo
 	return &pb.ReadResponse{Payload: &google_protobuf.Any{Value: data}, ReadTime: time.Now().Sub(t).Nanoseconds() / 1000000}, nil
 }
 
-//Delete removes a key
+// Delete removes a key
 func (k *KeyStore) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	k.store.Meta.Version++
 	k.store.Meta.DeletedKeys = append(k.store.Meta.DeletedKeys, req.Key)
 	return &pb.DeleteResponse{}, nil
 }
 
-//GetMeta gets the metadata
+// GetMeta gets the metadata
 func (k *KeyStore) GetMeta(ctx context.Context, req *pb.Empty) (*pb.StoreMeta, error) {
 	return k.store.Meta, nil
 }
