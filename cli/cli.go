@@ -10,7 +10,7 @@ import (
 
 	"github.com/brotherlogic/goserver/utils"
 	"github.com/brotherlogic/keystore/client"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/grpc"
 
 	pbd "github.com/brotherlogic/discovery/proto"

@@ -11,7 +11,7 @@ import (
 	pbd "github.com/brotherlogic/discovery/proto"
 	pb "github.com/brotherlogic/keystore/proto"
 	pbvs "github.com/brotherlogic/versionserver/proto"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	google_protobuf "github.com/golang/protobuf/ptypes/any"
 )
 
