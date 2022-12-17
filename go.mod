@@ -3,8 +3,7 @@ module github.com/brotherlogic/keystore
 go 1.16
 
 require (
-	github.com/brotherlogic/discovery v0.0.0-20221217182444-b37b79160c37
-	github.com/brotherlogic/dstore v0.0.0-20221217201533-bd0fa2114561 // indirect
+	github.com/brotherlogic/discovery v0.0.0-20221217211437-d17c15d6275b
 	github.com/brotherlogic/godiscogs v0.0.0-20221025153630-9ad31d9fab21
 	github.com/brotherlogic/goserver v0.0.0-20221217002224-0ba5c0213be1
 	github.com/brotherlogic/proxy v0.0.0-20221211023330-14fc812009a5
