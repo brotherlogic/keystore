@@ -147,7 +147,7 @@ func TestGetDirectory(t *testing.T) {
 	dir, err := s.GetDirectory(context.Background(), &pb.GetDirectoryRequest{})
 
 	if err != nil {
-		t.Fatalf("Error in getting directory: %v", err)
+		t.Fatalf("error in getting directory: %v", err)
 	}
 
 	if len(dir.Keys) != 2 {
