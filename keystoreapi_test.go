@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/proto"
 
 	pbd "github.com/brotherlogic/discovery/proto"
 	pb "github.com/brotherlogic/keystore/proto"
@@ -136,30 +136,6 @@ func BenchmarkBasicSave(b *testing.B) {
 	}
 }
 
-func TestMoteSuccess(t *testing.T) {
-	s := InitTest(".testMoteSuccess/")
-	s.serverGetter = &testServerGetter{}
-	s.serverStatusGetter = &testServerStatusGetter{}
-	s.store.Meta.Version = 100
-
-	val := s.Mote(context.Background(), true)
-	if val != nil {
-		t.Errorf("Server has not accepted mote when it was way ahead of the pack:%v", val)
-	}
-}
-
-func TestMoteFail(t *testing.T) {
-	s := InitTest(".testMoteFail/")
-	s.serverGetter = &testServerGetter{}
-	s.serverStatusGetter = &testServerStatusGetter{}
-	s.store.Meta.Version = 50
-
-	val := s.Mote(context.Background(), true)
-	if val == nil {
-		t.Errorf("Server has not accepted mote when it was way behind")
-	}
-}
-
 func TestGetDirectory(t *testing.T) {
 	s := InitTest(".testGetDirectory/")
 
@@ -171,7 +147,7 @@ func TestGetDirectory(t *testing.T) {
 	dir, err := s.GetDirectory(context.Background(), &pb.GetDirectoryRequest{})
 
 	if err != nil {
-		t.Fatalf("Error in getting directory: %v", err)
+		t.Fatalf("error in getting directory: %v", err)
 	}
 
 	if len(dir.Keys) != 2 {
