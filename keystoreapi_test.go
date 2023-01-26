@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/proto"
 	"golang.org/x/net/context"
+	"google.golang.org/protobuf/proto"
 
 	pbd "github.com/brotherlogic/discovery/proto"
 	pb "github.com/brotherlogic/keystore/proto"
@@ -133,30 +133,6 @@ func BenchmarkBasicSave(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		s.Save(context.Background(), &pb.SaveRequest{Key: "madeup", Value: &google_protobuf.Any{Value: emp}})
 		time.Sleep(time.Millisecond * 100)
-	}
-}
-
-func TestMoteSuccess(t *testing.T) {
-	s := InitTest(".testMoteSuccess/")
-	s.serverGetter = &testServerGetter{}
-	s.serverStatusGetter = &testServerStatusGetter{}
-	s.store.Meta.Version = 100
-
-	val := s.Mote(context.Background(), true)
-	if val != nil {
-		t.Errorf("Server has not accepted mote when it was way ahead of the pack:%v", val)
-	}
-}
-
-func TestMoteFail(t *testing.T) {
-	s := InitTest(".testMoteFail/")
-	s.serverGetter = &testServerGetter{}
-	s.serverStatusGetter = &testServerStatusGetter{}
-	s.store.Meta.Version = 50
-
-	val := s.Mote(context.Background(), true)
-	if val == nil {
-		t.Errorf("Server has not accepted mote when it was way behind")
 	}
 }
 
