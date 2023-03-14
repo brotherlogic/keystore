@@ -13,5 +13,5 @@ require (
 	github.com/golang/protobuf v1.5.3
 	golang.org/x/net v0.8.0
 	google.golang.org/grpc v1.53.0
-	google.golang.org/protobuf v1.29.0
+	google.golang.org/protobuf v1.29.1
 )
