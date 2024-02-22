@@ -258,10 +258,6 @@ func (k *KeyStore) HardSync(ctx context.Context) error {
 
 // Save a save request proto
 func (k *KeyStore) Save(ctx context.Context, req *pb.SaveRequest) (*pb.Empty, error) {
-	// Prevent large saves
-	if proto.Size(req.Value) > 1024*1024 {
-		k.RaiseIssue("Large Write", fmt.Sprintf("Attempting to write a large proto for %v (%v)", req.GetKey(), proto.Size(req.Value)))
-	}
 
 	//k.RaiseIssue("Keystore Write", fmt.Sprintf("%v is being written to keystore", req.GetKey()))
 
