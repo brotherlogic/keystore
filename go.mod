@@ -22,7 +22,7 @@ require (
 	github.com/brotherlogic/buildserver v0.0.0-20240313234142-e8252bb89f99 // indirect
 	github.com/brotherlogic/datastore v0.0.0-20240313234543-6ca7ba1ba5c6 // indirect
 	github.com/brotherlogic/dstore v0.0.0-20240213113129-6ba7a68ec1dd // indirect
-	github.com/brotherlogic/githubcard v0.0.0-20240318223951-28a323433589 // indirect
+	github.com/brotherlogic/githubcard v0.0.0-20240326034409-e019f34b98cb // indirect
 	github.com/brotherlogic/githubridge v0.2776.0 // indirect
 	github.com/brotherlogic/gobuildslave v0.0.0-20240313234611-4b9213dcf104 // indirect
 	github.com/brotherlogic/lock v0.0.0-20240313234114-ec93481862e4 // indirect
@@ -32,10 +32,10 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.0 // indirect
-	github.com/prometheus/common v0.51.0 // indirect
+	github.com/prometheus/common v0.51.1 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
 	github.com/struCoder/pidusage v0.2.1 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240318140521-94a12d6c2237 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240325203815-454cdb8f5daa // indirect
 )
