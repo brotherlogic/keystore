@@ -1,6 +1,6 @@
 module github.com/brotherlogic/keystore
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/brotherlogic/discovery v0.0.0-20240419131425-ad09bb7246e3
@@ -10,7 +10,7 @@ require (
 	github.com/brotherlogic/recordcollection v0.0.0-20240507141004-bfb0a1e980c6
 	github.com/brotherlogic/versionserver v0.0.0-20221025154054-c9bcd41be2f2
 	github.com/golang/protobuf v1.5.4
-	golang.org/x/net v0.48.0
+	golang.org/x/net v0.55.0
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.10
 )
@@ -33,7 +33,7 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.14.0 // indirect
 	github.com/struCoder/pidusage v0.2.1 // indirect
-	golang.org/x/sys v0.39.0 // indirect
-	golang.org/x/text v0.32.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 )
